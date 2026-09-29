@@ -1,0 +1,24 @@
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+cyber_shift.db
+
+# Python cache & virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+
+# Environment secrets
+.env
+.env.local
+
+# Node / IDE files
+node_modules/
+.vscode/
+.idea/
+.DS_Store
