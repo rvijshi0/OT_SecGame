@@ -17,10 +17,21 @@ SMTP_PASS = os.getenv("SMTP_PASS", "")                  # SMTP Auth Password (if
 SMTP_FROM = os.getenv("SMTP_FROM", "security-game@company.com") # From address for OTP emails
 
 # ==============================================================================
+# ACCESS CONTROL — EMAIL DOMAIN ALLOW-LIST
+# Only users whose email belongs to one of these domains can sign in.
+# Separate multiple domains with commas, e.g. "company.com, subsidiary.com".
+# Matching is exact: "company.com" does NOT admit "mail.company.com" unless listed.
+# Leave empty ("") to allow any domain — not recommended for production.
+# ==============================================================================
+ALLOW_DOMAIN = os.getenv("ALLOW_DOMAIN", "company.com")
+ALLOWED_DOMAINS = [d.strip().lower().lstrip("@") for d in ALLOW_DOMAIN.split(",") if d.strip()]
+
+# ==============================================================================
 # SECURITY & AUTH SETTINGS
 # ==============================================================================
 OTP_EXPIRY_MINUTES = 10  # OTP valid for 10 minutes
 OTP_LENGTH = 6           # 6-digit numeric OTP
+SESSION_EXPIRY_HOURS = int(os.getenv("SESSION_EXPIRY_HOURS", "24"))  # Login session lifetime
 
 # In local development/testing mode, set to True to return the OTP in API responses
 # for easy browser testing when an SMTP server is unavailable. Set to False for production!

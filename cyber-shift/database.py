@@ -8,7 +8,7 @@ import sqlite3
 import hashlib
 import secrets
 import datetime
-from config import DATABASE_FILE, OTP_EXPIRY_MINUTES
+from config import DATABASE_FILE, OTP_EXPIRY_MINUTES, SESSION_EXPIRY_HOURS
 
 def get_db():
     conn = sqlite3.connect(DATABASE_FILE)
@@ -54,9 +54,18 @@ def init_db():
             token TEXT PRIMARY KEY,
             email TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expires_at TIMESTAMP NOT NULL
+            expires_at TIMESTAMP NOT NULL,
+            revoked_at TIMESTAMP DEFAULT NULL,
+            revoked_reason TEXT DEFAULT NULL
         )
     """)
+    # Migrate databases created before session revocation existed
+    session_cols = {row["name"] for row in cursor.execute("PRAGMA table_info(sessions)")}
+    if "revoked_at" not in session_cols:
+        cursor.execute("ALTER TABLE sessions ADD COLUMN revoked_at TIMESTAMP DEFAULT NULL")
+    if "revoked_reason" not in session_cols:
+        cursor.execute("ALTER TABLE sessions ADD COLUMN revoked_reason TEXT DEFAULT NULL")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_email ON sessions (email)")
     
     # Mission Logs table — audit trail of decision choices and mission attempts
     cursor.execute("""
@@ -139,10 +148,20 @@ def verify_otp(email: str, otp_code: str):
     
     # Mark OTP as used
     cursor.execute("UPDATE otps SET is_used = 1 WHERE id = ?", (otp_record["id"],))
-    
-    # Generate session token (valid for 24 hours)
+
+    # Housekeeping: drop expired sessions
+    cursor.execute("DELETE FROM sessions WHERE expires_at <= ?", (now,))
+
+    # Single active session per user: the new login displaces any existing ones
+    cursor.execute(
+        """UPDATE sessions SET revoked_at = ?, revoked_reason = 'replaced'
+           WHERE email = ? AND revoked_at IS NULL""",
+        (now, email)
+    )
+
+    # Generate session token
     token = secrets.token_hex(32)
-    session_expires = now + datetime.timedelta(hours=24)
+    session_expires = now + datetime.timedelta(hours=SESSION_EXPIRY_HOURS)
     cursor.execute(
         "INSERT INTO sessions (token, email, expires_at) VALUES (?, ?, ?)",
         (token, email, session_expires)
@@ -155,7 +174,13 @@ def verify_otp(email: str, otp_code: str):
     user = cursor.fetchone()
     conn.close()
     
-    return {"token": token, "user": dict(user)}, None
+    return {"token": token, "user": dict(user), "expires_at": to_iso_utc(session_expires)}, None
+
+def to_iso_utc(value) -> str:
+    """Normalizes a naive-UTC datetime (or its SQLite string form) to ISO-8601 with 'Z'."""
+    if isinstance(value, str):
+        value = datetime.datetime.fromisoformat(value)
+    return value.replace(microsecond=0).isoformat() + "Z"
 
 def get_user_by_session(token: str):
     if not token:
@@ -164,14 +189,41 @@ def get_user_by_session(token: str):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        """SELECT s.email, u.* FROM sessions s
+        """SELECT u.*, s.expires_at AS session_expires_at FROM sessions s
            JOIN users u ON s.email = u.email
-           WHERE s.token = ? AND s.expires_at > ?""",
+           WHERE s.token = ? AND s.expires_at > ? AND s.revoked_at IS NULL""",
         (token, now)
     )
-    user = cursor.fetchone()
+    row = cursor.fetchone()
     conn.close()
-    return dict(user) if user else None
+    if not row:
+        return None
+    user = dict(row)
+    user["session_expires_at"] = to_iso_utc(user["session_expires_at"])
+    return user
+
+def get_session_revocation_reason(token: str):
+    """Why a token is no longer valid: 'replaced' (signed in elsewhere) or None (unknown/expired)."""
+    if not token:
+        return None
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT revoked_reason FROM sessions WHERE token = ?", (token,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["revoked_reason"] if row else None
+
+def delete_session(token: str) -> bool:
+    """Revokes a session token (sign-out). Returns True if a session was removed."""
+    if not token:
+        return False
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM sessions WHERE token = ?", (token,))
+    removed = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return removed
 
 def record_mission_completion(email: str, mission_id: str, score: int, grade: str, decisions_json: str):
     email = email.strip().lower()

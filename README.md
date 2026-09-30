@@ -12,12 +12,24 @@
 ## 🎯 Key Features 1
 
 - 🖥️ **Two Connected Missions**:
-  - **Mission 1: THE LAST 15 MINUTES (IT Security)** — Business Email Compromise (BEC), MFA fatigue/storm attacks, unapproved AI tool data leakage, prompt injection, and deepfake verification.
-  - **Mission 2: LINE DOWN (OT Security)** — Vendor access management, unknown USB removable media, IT/OT convergence, HMI anomaly escalation, and safety-first operational decisions.
+  - **Mission 1: THE LAST 15 MINUTES (Office & online safety)** — fake payment emails and texts, login-code scams, AI tools, fake callers and video calls, lost devices and office habits.
+  - **Mission 2: LINE DOWN (Factory & plant safety)** — visitors and contractors, USB sticks, office-to-plant risks, strange machine behaviour and safety-first decisions.
+- 🎲 **50 Plain-English Scenarios** (25 per mission) written for non-technical staff:
+  - Each player gets **10 random scenarios per mission**, fixed per player (seeded by their email) so it cannot be re-rolled, and always covering every badge topic.
+  - Answer options are shuffled for every question; each scenario has its own illustration and, where useful, a mock-up (email, text message, call, pop-up, control screen).
+  - After every answer players see why it was right or wrong, and the safest choice when they missed it.
 - 🔐 **Email OTP Authentication**:
   - Requires participants to enter their corporate email address.
   - Dispatches a 6-digit One-Time Password (OTP) via your organization's SMTP email server.
   - Validates OTP with a 10-minute expiry window and single-use token issuance.
+- 🪪 **Session Management**:
+  - Sessions expire after `SESSION_EXPIRY_HOURS` (default 24h); the client signs out automatically at expiry.
+  - Sign-out revokes the token server-side (`POST /api/auth/logout`) and is synced across browser tabs.
+  - In-progress missions are saved per user on the device and resume after a reload, sign-out, or trip to the main page.
+- 🏢 **Email Domain Allow-List**: only addresses from the domain(s) in `ALLOW_DOMAIN` (config.py) can sign in.
+- 👤 **One Active Session per User**: signing in elsewhere signs out the previous browser/device, which is told why.
+- 📱 **Responsive, Full-Width Layout**: two-column scenes on desktop, stacked layout on tablets and phones (down to 320px).
+- 🧭 **Floating Top Bar**: live mission progress (scene-by-scene outcome segments, score, risk), campaign progress with one-click resume, navigation to Home / Missions / Leaderboard, and an account menu with session status and Sign out.
 - 🔒 **Strict Single-Play Policy Enforcement**:
   - Guarantees campaign integrity by limiting each participant to **ONE (1) attempt per mission**.
   - Server-side enforcement (HTTP 403 Forbidden on replay attempts).
@@ -43,9 +55,9 @@ OT_SecGame/
 │   ├── emailer.py          # SMTP email delivery for OTP verification
 │   ├── index.html          # Main HTML web page
 │   ├── styles.css          # Core CSS design system, typography, micro-animations & auth modal
-│   ├── bundle.js           # Single-file bundled game engine, scenarios, renderers & auth client
+│   ├── bundle.js           # Game engine, screens, illustrations, session & auth client
 │   ├── requirements.txt    # Python dependencies (Flask)
-│   └── game-data.js        # SCORM / Data definitions
+│   └── game-data.js        # All scenarios, missions, topics & badges (edit content here)
 ├── .gitignore              # Excludes SQLite database files, python cache & environment files
 ├── LICENSE                 # MIT Open Source License
 └── README.md               # Project documentation & deployment guide
@@ -127,6 +139,14 @@ You can also configure settings via environment variables:
 | `SMTP_USER` | `""` | Optional SMTP authentication username |
 | `SMTP_PASS` | `""` | Optional SMTP authentication password |
 | `SMTP_FROM` | `security-game@company.com` | From-address for OTP emails |
+| `SESSION_EXPIRY_HOURS` | `24` | Lifetime of a login session in hours |
+| `ALLOW_DOMAIN` | `company.com` | Email domain(s) allowed to sign in, comma-separated (e.g. `company.com, subsidiary.com`). Exact match only; empty allows any domain |
+
+---
+
+## ✍️ Editing Scenarios
+
+All game content lives in `cyber-shift/game-data.js`; the instructions at the top of that file explain every field. In short: write in plain English, give each question four answers graded `best` / `ok` / `risky` / `critical` (exactly one `best`), and pick an illustration with `art`. Scoring, answer shuffling and the per-player selection of `SCENES_PER_MISSION` (default 10) scenarios are automatic. The browser console warns about scenarios with missing or duplicate `best` answers or unknown topics.
 
 ---
 

@@ -7,12 +7,46 @@ from flask import Flask, request, jsonify, send_from_directory
 import os
 import json
 import re
-from config import SERVER_HOST, SERVER_PORT, SMTP_HOST, SMTP_PORT, SMTP_FROM, DEV_SHOW_OTP_IN_RESPONSE
-from database import init_db, create_otp, verify_otp, get_user_by_session, record_mission_completion, get_db
+from config import SERVER_HOST, SERVER_PORT, SMTP_HOST, SMTP_PORT, SMTP_FROM, DEV_SHOW_OTP_IN_RESPONSE, ALLOWED_DOMAINS
+from database import (init_db, create_otp, verify_otp, get_user_by_session, get_session_revocation_reason,
+                      delete_session, record_mission_completion, get_db)
 
 app = Flask(__name__, static_folder=".", static_url_path="")
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+def get_bearer_token() -> str:
+    auth_header = request.headers.get("Authorization", "")
+    return auth_header.replace("Bearer ", "").strip()
+
+def is_domain_allowed(email: str) -> bool:
+    """True if the email's domain is on the ALLOW_DOMAIN list (an empty list allows all)."""
+    if not ALLOWED_DOMAINS:
+        return True
+    return email.rsplit("@", 1)[-1].lower() in ALLOWED_DOMAINS
+
+def domain_error():
+    allowed = ", ".join("@" + d for d in ALLOWED_DOMAINS)
+    return jsonify({
+        "status": "error",
+        "code": "domain_not_allowed",
+        "message": f"Access restricted: only {allowed} email addresses can sign in."
+    }), 403
+
+def require_session():
+    """Resolves the bearer token to a user. Returns (user, None) or (None, 401 response with a reason code)."""
+    token = get_bearer_token()
+    user = get_user_by_session(token)
+    if user and is_domain_allowed(user["email"]):
+        return user, None
+    if user:
+        delete_session(token)
+        code, message = "domain_not_allowed", "Your email domain is no longer permitted to access this game."
+    elif get_session_revocation_reason(token) == "replaced":
+        code, message = "session_replaced", "You were signed out because your account signed in from another browser or device."
+    else:
+        code, message = "session_expired", "Invalid or expired session. Please log in again."
+    return None, (jsonify({"status": "error", "code": code, "message": message}), 401)
 
 # Initialize database on startup
 with app.app_context():
@@ -39,7 +73,8 @@ def get_public_config():
         "smtpHost": SMTP_HOST,
         "smtpPort": SMTP_PORT,
         "smtpFrom": SMTP_FROM,
-        "devMode": DEV_SHOW_OTP_IN_RESPONSE
+        "devMode": DEV_SHOW_OTP_IN_RESPONSE,
+        "allowedDomains": ALLOWED_DOMAINS
     })
 
 @app.route("/api/auth/request-otp", methods=["POST"])
@@ -50,6 +85,9 @@ def request_otp():
     
     if not email or not EMAIL_REGEX.match(email):
         return jsonify({"status": "error", "message": "Please enter a valid email address (e.g. employee@company.com)."}), 400
+    
+    if not is_domain_allowed(email):
+        return domain_error()
     
     try:
         from emailer import send_otp_email
@@ -96,6 +134,9 @@ def verify_otp_endpoint():
     
     if not email or not otp_code:
         return jsonify({"status": "error", "message": "Email and OTP code are required."}), 400
+    
+    if not is_domain_allowed(email):
+        return domain_error()
         
     result, err = verify_otp(email, otp_code)
     if err:
@@ -104,33 +145,35 @@ def verify_otp_endpoint():
     return jsonify({
         "status": "success",
         "token": result["token"],
-        "user": result["user"]
+        "user": result["user"],
+        "expiresAt": result["expires_at"]
     }), 200
+
+@app.route("/api/auth/logout", methods=["POST"])
+def logout_endpoint():
+    """Signs the user out by revoking their session token server-side."""
+    delete_session(get_bearer_token())
+    return jsonify({"status": "success", "message": "You have been signed out."}), 200
 
 @app.route("/api/user/status", methods=["GET"])
 def get_user_status():
     """Returns current user status and single-play restriction state."""
-    auth_header = request.headers.get("Authorization", "")
-    token = auth_header.replace("Bearer ", "").strip()
-    
-    user = get_user_by_session(token)
-    if not user:
-        return jsonify({"status": "error", "message": "Invalid or expired session. Please log in again."}), 401
+    user, error = require_session()
+    if error:
+        return error
         
     return jsonify({
         "status": "success",
-        "user": user
+        "user": user,
+        "expiresAt": user["session_expires_at"]
     }), 200
 
 @app.route("/api/mission/complete", methods=["POST"])
 def complete_mission_endpoint():
     """Records mission completion and permanently locks further attempts for that mission."""
-    auth_header = request.headers.get("Authorization", "")
-    token = auth_header.replace("Bearer ", "").strip()
-    
-    user = get_user_by_session(token)
-    if not user:
-        return jsonify({"status": "error", "message": "Unauthorized. Invalid session token."}), 401
+    user, error = require_session()
+    if error:
+        return error
         
     data = request.get_json(silent=True) or {}
     mission_id = data.get("missionId", "")
@@ -201,6 +244,8 @@ if __name__ == "__main__":
     print(f"  CYBER SHIFT SERVER RUNNING")
     print(f"  SMTP Server: {SMTP_HOST}:{SMTP_PORT} | From: {SMTP_FROM}")
     print(f"  Single-Play Enforcement: Active (1 Attempt per User per Mission)")
+    print(f"  Allowed Domains: {', '.join(ALLOWED_DOMAINS) if ALLOWED_DOMAINS else 'ANY (ALLOW_DOMAIN is empty)'}")
+    print(f"  Parallel Sessions: Blocked (new login signs out other sessions)")
     print(f"  URL: http://localhost:{SERVER_PORT}")
     print("=" * 70)
     app.run(host=SERVER_HOST, port=SERVER_PORT, debug=True)
