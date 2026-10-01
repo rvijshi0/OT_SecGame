@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CYBER SHIFT — Bundled Application
  * Game engine, screens, session management and UI.
  * Scenario content lives in game-data.js (loaded first by index.html).
@@ -427,17 +427,17 @@
       case 'chat':
         return '<div class="mock-chat"><div class="mock-chat__app">💬 ' + esc(v.app || 'Chat') + '</div><div class="mock-chat__msg"><div class="mock-chat__avatar">' + esc((v.from || '?').charAt(0)) + '</div><div><div class="mock-chat__from">' + esc(v.from) + '</div><div class="mock-chat__bubble">' + textBlock(v.text) + '</div></div></div></div>';
       case 'call':
-        return '<div class="mock-call"><div class="mock-call__avatar">👤</div><div class="mock-call__name">' + esc(v.name) + '</div><div class="mock-call__role">' + esc(v.role || '') + '</div><div class="mock-call__status">' + esc(v.status || '') + '</div>' + (v.note ? '<div class="mock-note">⚠ ' + esc(v.note) + '</div>' : '') + '</div>';
+        return '<div class="mock-call"><div class="mock-call__avatar">👤</div><div class="mock-call__name">' + esc(v.name) + '</div><div class="mock-call__role">' + esc(v.role || '') + '</div><div class="mock-call__status">' + esc(v.status || '') + '</div>' + (v.note ? '<div class="mock-note">⚠  ' + esc(v.note) + '</div>' : '') + '</div>';
       case 'approval':
-        return '<div class="mock-approvals">' + [1, 2, 3].map(i => '<div class="mock-mfa" style="animation-delay:' + (i * 0.3) + 's"><div class="mock-mfa__icon">🔔</div><div class="mock-mfa__title">' + esc(v.text) + '</div><div class="mock-mfa__counter">Request ' + i + ' of ' + (v.count || 3) + '</div></div>').join('') + '</div>';
+        return '<div class="mock-approvals">' + [1, 2, 3].map(i => '<div class="mock-mfa" style="animation-delay:' + (i * 0.3) + 's"><div class="mock-mfa__icon">🔐”</div><div class="mock-mfa__title">' + esc(v.text) + '</div><div class="mock-mfa__counter">Request ' + i + ' of ' + (v.count || 3) + '</div></div>').join('') + '</div>';
       case 'popup':
         return '<div class="mock-alert mock-alert--' + (v.tone || 'warn') + '"><div class="mock-alert__icon">' + (v.tone === 'info' ? 'ℹ️' : v.tone === 'danger' ? '🚨' : '⚠️') + '</div><div class="mock-alert__content"><div class="mock-alert__title">' + esc(v.title) + '</div><div class="mock-alert__text">' + textBlock(v.text) + '</div></div></div>';
       case 'ai':
-        return '<div class="mock-ai"><div class="mock-ai__header">' + esc(v.title) + '</div><div class="mock-ai__message">' + textBlock(v.text) + '</div>' + (v.hidden ? '<div class="mock-ai__injection">' + textBlock(v.hidden) + '</div>' : '') + (v.warning ? '<div class="mock-note">⚠ ' + esc(v.warning) + '</div>' : '') + '</div>';
+        return '<div class="mock-ai"><div class="mock-ai__header">' + esc(v.title) + '</div><div class="mock-ai__message">' + textBlock(v.text) + '</div>' + (v.hidden ? '<div class="mock-ai__injection">' + textBlock(v.hidden) + '</div>' : '') + (v.warning ? '<div class="mock-note">⚠  ' + esc(v.warning) + '</div>' : '') + '</div>';
       case 'flow':
         return '<div class="convergence-path"><div class="convergence-path__nodes">' + v.nodes.map((n, i) => '<div class="convergence-node convergence-node--' + (n.status || 'active') + '">' + esc(n.label) + '</div>' + (i < v.nodes.length - 1 ? (n.note ? '<div class="convergence-label">' + esc(n.note) + '</div>' : '') + '<div class="convergence-arrow convergence-arrow--animated"></div>' : '')).join('') + '</div></div>';
       case 'screen':
-        return '<div class="mock-hmi-warning"><div class="mock-hmi-warning__title">' + esc(v.title) + '</div><div class="mock-readings">' + v.readings.map(r => '<div class="mock-reading mock-reading--' + (r.tone || 'ok') + '"><span>' + esc(r.label) + '</span><strong>' + esc(r.value) + '</strong></div>').join('') + '</div>' + (v.warning ? '<div class="mock-hmi-warning__text">⚠ ' + esc(v.warning) + '</div>' : '') + '</div>';
+        return '<div class="mock-hmi-warning"><div class="mock-hmi-warning__title">' + esc(v.title) + '</div><div class="mock-readings">' + v.readings.map(r => '<div class="mock-reading mock-reading--' + (r.tone || 'ok') + '"><span>' + esc(r.label) + '</span><strong>' + esc(r.value) + '</strong></div>').join('') + '</div>' + (v.warning ? '<div class="mock-hmi-warning__text">⚠  ' + esc(v.warning) + '</div>' : '') + '</div>';
       default:
         return '';
     }
@@ -447,6 +447,7 @@
   // SESSION MANAGEMENT (auth token, expiry, sign-out, cross-tab sync)
   // ================================================================
   const TOKEN_KEY = 'cybershift_auth_token';
+function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) || ''; }
   const EXPIRY_KEY = 'cybershift_auth_expires';
   const SIGNOUT_REASON_KEY = 'cybershift_signout_reason';
   const HEARTBEAT_MS = 60000;
@@ -593,7 +594,7 @@
       currentUser = null;
       if (await checkUserSession()) {
         closeOverlays();
-        nav('missionselect');
+        if (currentUser && currentUser.isAdmin) { nav('admin'); } else { nav('missionselect'); }
       }
     }
   });
@@ -777,13 +778,13 @@
       '<nav class="topbar__nav" aria-label="Main navigation">' +
       navBtn('tb-home', '🏠', 'Home', ['landing']) +
       navBtn('tb-missions', '🎯', 'Missions', ['missionselect', 'intro']) +
-      navBtn('tb-lb', '🏆', 'Leaderboard', ['leaderboard']) +
+      navBtn('tb-lb', '🏆', 'Leaderboard', ['leaderboard']) + (currentUser && currentUser.isAdmin ? navBtn('tb-admin', '👑', 'Admin', ['admin']) : '') +
       '<div class="topbar__user">' +
       '<button class="topbar__avatar" id="tb-user" aria-haspopup="menu" aria-expanded="false" title="' + esc(email) + '">' + esc(email.charAt(0).toUpperCase()) + '</button>' +
       '<div class="topbar__menu" id="tb-menu" role="menu" hidden>' +
       '<div class="topbar__menu-head"><div class="topbar__menu-avatar">' + esc(email.charAt(0).toUpperCase()) + '</div><div class="topbar__menu-id"><div class="topbar__menu-email">' + esc(email) + '</div>' +
       '<div class="topbar__menu-session"><span class="topbar__dot"></span>Session active · expires in <span id="tb-session-left">' + sessionTimeLeft() + '</span></div></div></div>' +
-      '<button class="topbar__menu-item" id="tb-howto" role="menuitem">📖 How to Play</button>' +
+      (currentUser && currentUser.isAdmin ? '<button class="topbar__menu-item" id="tb-admin-menu" role="menuitem">👑 Admin Dashboard</button>' : '') + '<button class="topbar__menu-item" id="tb-howto" role="menuitem">📖 How to Play</button>' +
       '<button class="topbar__menu-item topbar__menu-item--danger" id="btn-logout" role="menuitem">⏻ Sign out</button>' +
       '</div></div>' +
       '</nav>';
@@ -872,7 +873,7 @@
       bodyContent = '<div class="auth-header"><span class="auth-badge">OTP VERIFICATION</span><h2 class="auth-title">Enter Security Code</h2><p class="auth-desc">A 6-digit OTP was sent via SMTP to <strong>' + esc(authEmail) + '</strong>.</p></div>' +
         (authErrorMsg ? '<div class="auth-status auth-status--error">' + esc(authErrorMsg) + '</div>' : '') +
         (authSuccessMsg ? '<div class="auth-status auth-status--success">' + esc(authSuccessMsg) + '</div>' : '') +
-        (devNoticeOtp ? '<div class="auth-status auth-status--dev">🔑 DEV MODE OTP: <strong>' + esc(devNoticeOtp) + '</strong></div>' : '') +
+        (devNoticeOtp ? '<div class="auth-status auth-status--dev">🔐‘ DEV MODE OTP: <strong>' + esc(devNoticeOtp) + '</strong></div>' : '') +
         '<div class="auth-input-group"><label class="auth-label" for="inp-auth-otp" style="text-align:center">6-Digit OTP Code</label><input type="text" id="inp-auth-otp" class="auth-input" placeholder="123456" maxlength="6" style="text-align:center;letter-spacing:6px;font-family:var(--font-mono);font-size:22px;font-weight:700" autofocus /></div>' +
         '<button class="btn btn--primary btn--full" id="btn-verify-otp">VERIFY & ENTER GAME →</button>' +
         '<div style="margin-top:var(--space-md);display:flex;justify-content:space-between;font-size:12px"><button class="btn btn--ghost" id="btn-change-email" style="padding:4px 8px">← Change Email</button><button class="btn btn--ghost" id="btn-resend-otp" style="padding:4px 8px">Resend OTP</button></div>';
@@ -894,6 +895,574 @@
       const g = document.createElement('div'); g.className = 'bg-grid'; document.body.appendChild(g);
       const g1 = document.createElement('div'); g1.className = 'bg-glow bg-glow--cyan'; document.body.appendChild(g1);
       const g2 = document.createElement('div'); g2.className = 'bg-glow bg-glow--purple'; document.body.appendChild(g2);
+    }
+  }
+
+  
+  // ================================================================
+  // ENTERPRISE ADMIN DASHBOARD ENGINE & RENDERERS
+  // ================================================================
+  let adminActiveTab = 'overview';
+  let adminUserSearch = '';
+  let adminStatusFilter = 'all';
+  let adminDataCache = { users: [], stats: {}, config: {}, questions: [], analytics: {}, audit: [] };
+  let adminCatConfigState = {};
+
+  async function fetchAdminData() {
+    try {
+      const token = getBearerToken();
+      const headers = { 'Authorization': 'Bearer ' + token };
+      
+      const [uRes, cRes, qRes, aRes, lRes] = await Promise.all([
+        fetch('/api/admin/users', { headers }),
+        fetch('/api/admin/config', { headers }),
+        fetch('/api/admin/questions', { headers }),
+        fetch('/api/admin/analytics', { headers }),
+        fetch('/api/admin/audit-logs', { headers })
+      ]);
+      
+      if (uRes.status === 403 || cRes.status === 403) {
+        showToast('⚠️ Admin access denied: Administrator email authorization required.');
+        nav('landing');
+        return false;
+      }
+
+      const uData = await uRes.json();
+      const cData = await cRes.json();
+      const qData = await qRes.json();
+      const aData = await aRes.json();
+      const lData = await lRes.json();
+
+      if (uData.status === 'success') {
+        adminDataCache.users = uData.users || [];
+        adminDataCache.stats = uData.stats || {};
+      }
+      if (cData.status === 'success') {
+    adminDataCache.adminEmails = cData.adminEmails || ['admin@company.com'];
+        adminDataCache.config = cData.config || {};
+        adminDataCache.summary = cData.availableQuestionsSummary || {};
+        adminCatConfigState = JSON.parse(JSON.stringify(cData.config.category_config || {}));
+      }
+      if (qData.status === 'success') adminDataCache.questions = qData.questions || [];
+      if (aData.status === 'success') adminDataCache.analytics = aData || {};
+      if (lData.status === 'success') adminDataCache.audit = lData.auditLogs || [];
+
+      return true;
+    } catch (e) {
+      console.error('[ADMIN FETCH ERROR]', e);
+      showToast('❌ Failed to connect to Admin backend APIs.');
+      return false;
+    }
+  }
+
+  async function renderAdminDashboardHtml() {
+    await fetchAdminData();
+
+    const email = currentUser ? currentUser.email : 'admin@company.com';
+    const stats = adminDataCache.stats || {};
+    const cfg = adminDataCache.config || {};
+
+    const tabBtn = (id, icon, label) =>
+      '<button class="admin-tab ' + (adminActiveTab === id ? 'admin-tab--active' : '') + '" data-admintab="' + id + '">' +
+      '<span>' + icon + '</span><span>' + label + '</span></button>';
+
+    return '<div class="admin-dashboard scene-enter">' +
+      '<div class="admin-header">' +
+        '<div>' +
+          '<div class="admin-header__title"><span>👑</span> Enterprise Admin Dashboard</div>' +
+          '<div class="admin-header__subtitle">CYBER SHIFT — User Tracking, Question Configuration & Campaign Controls</div>' +
+        '</div>' +
+        '<div class="admin-header__actions">' +
+          '<span class="admin-badge admin-badge--admin">Logged in as ' + esc(email) + '</span>' +
+          '<button class="btn btn--secondary" id="btn-admin-refresh">🔄 Refresh</button>' +
+          '<button class="btn btn--ghost" id="btn-admin-to-player">🎮 Switch to Player View</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="admin-tabs">' +
+        tabBtn('overview', '📊', 'Overview') +
+        tabBtn('users', '👥', 'Users') +
+        tabBtn('attempts', '🔢', 'Attempt Limits') +
+        tabBtn('questions', '📚', 'Question Pool') +
+        tabBtn('config', '⚙️', 'Question Config') +
+        tabBtn('analytics', '📈', 'Analytics & Reports') +
+        tabBtn('audit', '📜', 'Audit Logs') +
+        tabBtn('settings', '🔧', 'Settings') +
+      '</div>' +
+
+      // Tab 1: Overview
+      '<div class="admin-section ' + (adminActiveTab === 'overview' ? 'admin-section--active' : '') + '">' +
+        '<div class="admin-kpi-grid">' +
+          '<div class="admin-kpi-card"><div class="admin-kpi-card__label">Total Registered Users</div><div class="admin-kpi-card__value">' + (stats.totalUsers || 0) + '</div><div class="admin-kpi-card__sub">Signed up via OTP</div></div>' +
+          '<div class="admin-kpi-card"><div class="admin-kpi-card__label">Users Started</div><div class="admin-kpi-card__value" style="color:var(--accent-blue)">' + (stats.usersStarted || 0) + '</div><div class="admin-kpi-card__sub">Attempted at least 1 mission</div></div>' +
+          '<div class="admin-kpi-card"><div class="admin-kpi-card__label">Fully Completed</div><div class="admin-kpi-card__value" style="color:var(--accent-green)">' + (stats.usersCompleted || 0) + '</div><div class="admin-kpi-card__sub">Finished IT & OT missions</div></div>' +
+          '<div class="admin-kpi-card"><div class="admin-kpi-card__label">Avg Score (IT / OT)</div><div class="admin-kpi-card__value" style="color:var(--accent-amber)">' + (stats.avgItScore || 0) + ' / ' + (stats.avgOtScore || 0) + '</div><div class="admin-kpi-card__sub">Normalized score out of 1000</div></div>' +
+        '</div>' +
+        '<div class="admin-card">' +
+          '<div class="admin-card__title"><span>System Status & Campaign Configuration</span><span class="status-pill status-pill--completed">ACTIVE</span></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-md)">' +
+            '<div style="background:var(--bg-secondary);padding:var(--space-md);border-radius:var(--border-radius-md)">' +
+              '<div style="color:var(--text-muted);font-size:12px">CONFIGURED ADMIN EMAILS</div>' +
+              '<div style="font-family:var(--font-mono);font-weight:700;margin-top:4px;color:var(--accent-cyan)">' + esc((adminDataCache.adminEmails || ['admin@company.com']).join('; ')) + '</div>' +
+            '</div>' +
+            '<div style="background:var(--bg-secondary);padding:var(--space-md);border-radius:var(--border-radius-md)">' +
+              '<div style="color:var(--text-muted);font-size:12px">CURRENT MAX ATTEMPTS ALLOWANCE</div>' +
+              '<div style="font-family:var(--font-mono);font-weight:700;margin-top:4px;color:var(--accent-amber)">' + (cfg.max_attempts_per_user || 3) + ' Attempt(s) per User</div>' +
+            '</div>' +
+            '<div style="background:var(--bg-secondary);padding:var(--space-md);border-radius:var(--border-radius-md)">' +
+              '<div style="color:var(--text-muted);font-size:12px">QUESTIONS PER GAME</div>' +
+              '<div style="font-family:var(--font-mono);font-weight:700;margin-top:4px;color:var(--accent-blue)">IT: ' + (cfg.it_questions_per_game || 10) + ' Qs | OT: ' + (cfg.ot_questions_per_game || 10) + ' Qs</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Tab 2: Users
+      '<div class="admin-section ' + (adminActiveTab === 'users' ? 'admin-section--active' : '') + '">' +
+        '<div class="admin-card">' +
+          '<div class="admin-card__title"><span>User Tracking & Gameplay Progress</span><span class="admin-badge admin-badge--role">' + adminDataCache.users.length + ' Registered Users</span></div>' +
+          '<div class="admin-table-controls">' +
+            '<input type="text" class="admin-search-input" id="admin-user-search" placeholder="🔍 Search email address..." value="' + esc(adminUserSearch) + '" />' +
+            '<div style="display:flex;gap:var(--space-sm)">' +
+              '<select class="admin-select" id="admin-user-filter">' +
+                '<option value="all"' + (adminStatusFilter === 'all' ? ' selected' : '') + '>All Statuses</option>' +
+                '<option value="Completed"' + (adminStatusFilter === 'Completed' ? ' selected' : '') + '>Completed Only</option>' +
+                '<option value="In Progress"' + (adminStatusFilter === 'In Progress' ? ' selected' : '') + '>In Progress</option>' +
+                '<option value="Not Started"' + (adminStatusFilter === 'Not Started' ? ' selected' : '') + '>Not Started</option>' +
+              '</select>' +
+              '<button class="btn btn--secondary" id="btn-export-csv-users">📥 Export CSV Report</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="admin-table-wrapper">' +
+            renderAdminUserTableHtml() +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Tab 3: Attempt Limits
+      '<div class="admin-section ' + (adminActiveTab === 'attempts' ? 'admin-section--active' : '') + '">' +
+        '<div class="admin-card">' +
+          '<div class="admin-card__title"><span>Dynamic Attempt Configuration</span></div>' +
+          '<p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-md)">Set the maximum allowed game attempts per employee across the campaign. You can also grant additional attempts or reset attempt counters for specific users below.</p>' +
+          '<div style="display:flex;gap:var(--space-md);align-items:center;background:var(--bg-secondary);padding:var(--space-md);border-radius:var(--border-radius-md);max-width:500px;margin-bottom:var(--space-lg)">' +
+            '<label style="font-weight:600;font-size:14px">Global Max Attempts Per User:</label>' +
+            '<input type="number" id="inp-global-max-attempts" class="config-input-number" min="1" max="10" value="' + (cfg.max_attempts_per_user || 3) + '" style="width:70px;font-size:16px" />' +
+            '<button class="btn btn--primary" id="btn-save-global-attempts">Save Attempt Limit</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Tab 4: Question Pool
+      '<div class="admin-section ' + (adminActiveTab === 'questions' ? 'admin-section--active' : '') + '">' +
+        '<div class="admin-card">' +
+          '<div class="admin-card__title"><span>Question Pool & Categorization</span><span class="admin-badge admin-badge--role">' + adminDataCache.questions.length + ' Total Questions</span></div>' +
+          '<div class="admin-table-wrapper">' +
+            renderAdminQuestionsTableHtml() +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Tab 5: Question Config
+      '<div class="admin-section ' + (adminActiveTab === 'config' ? 'admin-section--active' : '') + '">' +
+        '<div class="admin-card">' +
+          '<div class="admin-card__title"><span>Dynamic Question Configuration</span></div>' +
+          '<p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg)">Configure how many questions appear per game, and allocate the exact number of questions selected from each category independently for IT and OT missions.</p>' +
+          renderAdminQuestionConfigHtml() +
+        '</div>' +
+      '</div>' +
+
+      // Tab 6: Analytics & Reports
+      '<div class="admin-section ' + (adminActiveTab === 'analytics' ? 'admin-section--active' : '') + '">' +
+        '<div class="admin-card">' +
+          '<div class="admin-card__title"><span>Campaign Analytics & Frequently Missed Questions</span><button class="btn btn--primary" id="btn-export-csv-analytics">📥 Export Full CSV Report</button></div>' +
+          renderAdminAnalyticsHtml() +
+        '</div>' +
+      '</div>' +
+
+      // Tab 7: Audit Logs
+      '<div class="admin-section ' + (adminActiveTab === 'audit' ? 'admin-section--active' : '') + '">' +
+        '<div class="admin-card">' +
+          '<div class="admin-card__title"><span>Administrative Audit Logs</span></div>' +
+          '<div class="admin-table-wrapper">' +
+            renderAdminAuditLogsHtml() +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Tab 8: Settings
+      '<div class="admin-section ' + (adminActiveTab === 'settings' ? 'admin-section--active' : '') + '">' +
+        '<div class="admin-card">' +
+          '<div class="admin-card__title"><span>System Configuration & Security Settings</span></div>' +
+          '<div style="line-height:2">' +
+            '<div><strong>Primary Administrator Emails:</strong> <code style="color:var(--accent-cyan)">' + esc((adminDataCache.adminEmails || ['admin@company.com']).join('; ')) + '</code></div>' +
+            '<div><strong>Email Domain Whitelist:</strong> <code style="color:var(--accent-blue)">' + esc(allowedDomains.length ? allowedDomains.join(', ') : 'All Domains Allowed') + '</code></div>' +
+            '<div><strong>SMTP Host:</strong> <code style="color:var(--text-muted)">' + esc(cfg.smtpHost || '10.0.0.1') + '</code></div>' +
+            '<div><strong>Session Lifetime:</strong> <code>24 Hours</code></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+    '</div>';
+  }
+
+  function renderAdminUserTableHtml() {
+    let users = adminDataCache.users || [];
+    if (adminUserSearch) {
+      const q = adminUserSearch.toLowerCase();
+      users = users.filter(u => u.email.toLowerCase().includes(q));
+    }
+    if (adminStatusFilter !== 'all') {
+      users = users.filter(u => u.status === adminStatusFilter);
+    }
+
+    if (!users.length) {
+      return '<div style="padding:var(--space-lg);text-align:center;color:var(--text-muted)">No registered users found matching the selected filter criteria.</div>';
+    }
+
+    const rows = users.map(u => {
+      const sCls = u.status === 'Completed' ? 'status-pill--completed' : (u.status === 'In Progress' ? 'status-pill--inprogress' : 'status-pill--notstarted');
+      return '<tr>' +
+        '<td><strong>' + esc(u.email) + '</strong></td>' +
+        '<td><span class="status-pill ' + sCls + '">' + esc(u.status) + '</span></td>' +
+        '<td>' + esc(u.stage) + '</td>' +
+        '<td>' + u.attemptsUsed + ' / ' + u.maxAttempts + ' (' + u.attemptsRemaining + ' left)</td>' +
+        '<td><strong style="color:var(--accent-cyan)">' + (u.itScore || 0) + '</strong> (' + (u.itGrade || 'N/A') + ')</td>' +
+        '<td><strong style="color:var(--accent-blue)">' + (u.otScore || 0) + '</strong> (' + (u.otGrade || 'N/A') + ')</td>' +
+        '<td><strong style="color:var(--accent-amber)">' + u.totalScore + '</strong></td>' +
+        '<td>' + u.questionsCorrect + ' / ' + u.questionsAttempted + '</td>' +
+        '<td>' + (u.lastActiveAt ? u.lastActiveAt.replace('T', ' ').replace('Z', '') : 'N/A') + '</td>' +
+        '<td><button class="btn btn--ghost btn-user-detail" data-email="' + esc(u.email) + '" style="padding:4px 8px;font-size:12px">🔍 View Detail / Reset</button></td>' +
+      '</tr>';
+    }).join('');
+
+    return '<table class="admin-table">' +
+      '<thead><tr>' +
+        '<th>Email Address</th><th>Status</th><th>Current Stage</th><th>Attempts Used</th><th>IT Score</th><th>OT Score</th><th>Total Score</th><th>Correct / Attempted</th><th>Last Active</th><th>Action</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+  }
+
+  function renderAdminQuestionsTableHtml() {
+    const questions = adminDataCache.questions || [];
+    if (!questions.length) return '<div style="padding:var(--space-md);color:var(--text-muted)">Loading questions pool...</div>';
+
+    const rows = questions.map(q => {
+      const mBadge = q.mission === 'IT' ? '<span class="status-pill status-pill--inprogress">IT</span>' : '<span class="status-pill status-pill--completed">OT</span>';
+      return '<tr>' +
+        '<td><code>' + esc(q.id) + '</code></td>' +
+        '<td>' + mBadge + '</td>' +
+        '<td><strong style="color:var(--accent-cyan)">' + esc(q.category) + '</strong></td>' +
+        '<td>' + esc(q.title) + '</td>' +
+        '<td>' + esc(q.subtitle || '') + '</td>' +
+        '<td><button class="btn btn--ghost btn-toggle-q" data-qid="' + esc(q.id) + '" data-active="' + q.is_active + '" style="padding:2px 6px;font-size:11px">' + (q.is_active ? '✅ Active' : '❌ Disabled') + '</button></td>' +
+      '</tr>';
+    }).join('');
+
+    return '<table class="admin-table">' +
+      '<thead><tr><th>ID</th><th>Mission</th><th>Category</th><th>Title</th><th>Subtitle</th><th>Status</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+  }
+
+  function renderAdminQuestionConfigHtml() {
+    const summary = adminDataCache.summary || { IT: {}, OT: {} };
+    const cfg = adminDataCache.config || {};
+    const itTarget = parseInt(cfg.it_questions_per_game || 10);
+    const otTarget = parseInt(cfg.ot_questions_per_game || 10);
+
+    const renderMissionConfig = (mission, targetCount) => {
+      const avail = summary[mission] || {};
+      const catState = adminCatConfigState[mission] || {};
+      
+      let catSum = 0;
+      let invalidMsg = '';
+
+      const rows = Object.keys(TOPICS).map(catKey => {
+        const isItTopic = ['messages', 'accounts', 'ai', 'impersonation', 'reporting', 'devices', 'office'].includes(catKey);
+        const isOtTopic = ['vendor', 'usb', 'boundary', 'safety', 'incident', 'site', 'gadgets'].includes(catKey);
+        if (mission === 'IT' && !isItTopic) return '';
+        if (mission === 'OT' && !isOtTopic) return '';
+
+        const catName = TOPICS[catKey].label;
+        const availableCount = avail[catKey] || 0;
+        const currentConfigured = parseInt(catState[catKey] || 0);
+        catSum += currentConfigured;
+
+        if (currentConfigured > availableCount) {
+          invalidMsg = "Category '" + catName + "' configured with " + currentConfigured + " Qs, but only " + availableCount + " available!";
+        }
+
+        return '<div class="config-row">' +
+          '<div><strong>' + esc(catName) + '</strong><div style="font-size:11px;color:var(--text-muted)">Available: ' + availableCount + ' Qs</div></div>' +
+          '<div class="config-counter">' +
+            '<button class="config-btn-counter btn-cat-dec" data-mission="' + mission + '" data-cat="' + catKey + '">-</button>' +
+            '<input type="number" class="config-input-number inp-cat-val" data-mission="' + mission + '" data-cat="' + catKey + '" min="0" max="' + availableCount + '" value="' + currentConfigured + '" />' +
+            '<button class="config-btn-counter btn-cat-inc" data-mission="' + mission + '" data-cat="' + catKey + '">+</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      const isValid = !invalidMsg && catSum === targetCount;
+      const valBoxClass = isValid ? 'admin-validation-box--valid' : 'admin-validation-box--invalid';
+
+      return '<div class="config-box">' +
+        '<div class="config-box__header">' +
+          '<h3 style="color:var(--text-primary)">' + (mission === 'IT' ? '🖥️ Mission 1: IT Security' : '🏭 Mission 2: OT Security') + '</h3>' +
+          '<div>Target Qs per Game: <input type="number" class="config-input-number inp-game-target" data-mission="' + mission + '" min="1" max="25" value="' + targetCount + '" /></div>' +
+        '</div>' +
+        rows +
+        '<div class="admin-validation-box ' + valBoxClass + '">' +
+          '<div>' + (isValid ? '✅ Valid configuration: Sum of categories (' + catSum + ') matches game target (' + targetCount + ').' : ('❌ ' + (invalidMsg || ('Category sum (' + catSum + ') must equal game target (' + targetCount + ').')))) + '</div>' +
+        '</div>' +
+      '</div>';
+    };
+
+    const itConfigHtml = renderMissionConfig('IT', itTarget);
+    const otConfigHtml = renderMissionConfig('OT', otTarget);
+
+    return '<div class="config-grid">' + itConfigHtml + otConfigHtml + '</div>' +
+      '<div style="margin-top:var(--space-lg);text-align:right">' +
+        '<button class="btn btn--primary btn--lg" id="btn-save-q-config">💾 Save Question Configuration</button>' +
+      '</div>';
+  }
+
+  function renderAdminAnalyticsHtml() {
+    const analytics = adminDataCache.analytics || {};
+    const missed = analytics.mostMissedQuestions || [];
+
+    const missedRows = missed.map(m => {
+      return '<tr>' +
+        '<td><code>' + esc(m.questionId) + '</code></td>' +
+        '<td>' + m.attempts + '</td>' +
+        '<td><strong style="color:var(--accent-red)">' + m.incorrect + '</strong></td>' +
+        '<td><strong style="color:var(--accent-amber)">' + m.errorRatePct + '%</strong></td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div>' +
+      '<h4 style="margin-bottom:var(--space-md)">Most Frequently Missed Questions</h4>' +
+      '<div class="admin-table-wrapper">' +
+        '<table class="admin-table">' +
+          '<thead><tr><th>Question ID</th><th>Total Attempts</th><th>Incorrect Answers</th><th>Error Rate %</th></tr></thead>' +
+          '<tbody>' + (missedRows || '<tr><td colspan="4" style="text-align:center">No missed question data recorded yet.</td></tr>') + '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderAdminAuditLogsHtml() {
+    const logs = adminDataCache.audit || [];
+    if (!logs.length) return '<div style="padding:var(--space-md);color:var(--text-muted)">No administrative audit actions logged yet.</div>';
+
+    const rows = logs.map(l => {
+      return '<tr>' +
+        '<td>' + (l.created_at ? l.created_at.replace('T', ' ').replace('Z', '') : '') + '</td>' +
+        '<td><span class="admin-badge admin-badge--admin">' + esc(l.admin_email) + '</span></td>' +
+        '<td><strong style="color:var(--accent-cyan)">' + esc(l.action) + '</strong></td>' +
+        '<td>' + esc(l.details) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '<table class="admin-table">' +
+      '<thead><tr><th>Timestamp</th><th>Admin Email</th><th>Action</th><th>Details</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+  }
+
+  function initAdminDashboardEvents() {
+    document.querySelectorAll('[data-admintab]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        adminActiveTab = e.currentTarget.dataset.admintab;
+        nav('admin');
+      });
+    });
+
+    const btnRef = document.getElementById('btn-admin-refresh');
+    if (btnRef) btnRef.addEventListener('click', () => nav('admin'));
+
+    const btnPlay = document.getElementById('btn-admin-to-player');
+    if (btnPlay) btnPlay.addEventListener('click', () => nav('landing'));
+
+    const inpSearch = document.getElementById('admin-user-search');
+    if (inpSearch) {
+      inpSearch.addEventListener('input', (e) => {
+        adminUserSearch = e.target.value;
+        const w = document.querySelector('.admin-table-wrapper');
+        if (w) w.innerHTML = renderAdminUserTableHtml();
+        attachUserDetailEvents();
+      });
+    }
+
+    const selFilter = document.getElementById('admin-user-filter');
+    if (selFilter) {
+      selFilter.addEventListener('change', (e) => {
+        adminStatusFilter = e.target.value;
+        const w = document.querySelector('.admin-table-wrapper');
+        if (w) w.innerHTML = renderAdminUserTableHtml();
+        attachUserDetailEvents();
+      });
+    }
+
+    const btnExp1 = document.getElementById('btn-export-csv-users');
+    const btnExp2 = document.getElementById('btn-export-csv-analytics');
+    [btnExp1, btnExp2].forEach(btn => {
+      if (btn) {
+        btn.addEventListener('click', () => {
+          window.location.href = '/api/admin/analytics/export';
+          showToast('📥 Exporting campaign CSV report...');
+        });
+      }
+    });
+
+    const btnSaveAtt = document.getElementById('btn-save-global-attempts');
+    if (btnSaveAtt) {
+      btnSaveAtt.addEventListener('click', async () => {
+        const val = parseInt(document.getElementById('inp-global-max-attempts').value);
+        if (isNaN(val) || val < 1) {
+          showToast('⚠️ Max attempts must be at least 1.');
+          return;
+        }
+        const res = await fetch('/api/admin/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getBearerToken() },
+          body: JSON.stringify({ max_attempts_per_user: val })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          showToast('✅ Max attempt limit updated to ' + val + ' per user.');
+          nav('admin');
+        } else {
+          showToast('❌ ' + data.message);
+        }
+      });
+    }
+
+    document.querySelectorAll('.btn-cat-dec, .btn-cat-inc').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const m = e.currentTarget.dataset.mission;
+        const cat = e.currentTarget.dataset.cat;
+        const isInc = e.currentTarget.classList.contains('btn-cat-inc');
+        
+        if (!adminCatConfigState[m]) adminCatConfigState[m] = {};
+        let curr = parseInt(adminCatConfigState[m][cat] || 0);
+        curr = isInc ? curr + 1 : Math.max(0, curr - 1);
+        adminCatConfigState[m][cat] = curr;
+        
+        nav('admin');
+      });
+    });
+
+    document.querySelectorAll('.inp-cat-val').forEach(inp => {
+      inp.addEventListener('change', (e) => {
+        const m = e.currentTarget.dataset.mission;
+        const cat = e.currentTarget.dataset.cat;
+        const val = Math.max(0, parseInt(e.currentTarget.value) || 0);
+        if (!adminCatConfigState[m]) adminCatConfigState[m] = {};
+        adminCatConfigState[m][cat] = val;
+        nav('admin');
+      });
+    });
+
+    const btnSaveQ = document.getElementById('btn-save-q-config');
+    if (btnSaveQ) {
+      btnSaveQ.addEventListener('click', async () => {
+        const itT = parseInt(adminDataCache.config.it_questions_per_game || 10);
+        const otT = parseInt(adminDataCache.config.ot_questions_per_game || 10);
+
+        const res = await fetch('/api/admin/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getBearerToken() },
+          body: JSON.stringify({
+            it_questions_per_game: itT,
+            ot_questions_per_game: otT,
+            category_config: adminCatConfigState
+          })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          showToast('✅ Question configuration validated and saved persistently!');
+          nav('admin');
+        } else {
+          showToast('❌ ' + data.message);
+        }
+      });
+    }
+
+    attachUserDetailEvents();
+  }
+
+  function attachUserDetailEvents() {
+    document.querySelectorAll('.btn-user-detail').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const targetEmail = e.currentTarget.dataset.email;
+        showUserDetailModal(targetEmail);
+      });
+    });
+  }
+
+  async function showUserDetailModal(targetEmail) {
+    try {
+      const res = await fetch('/api/admin/user/' + encodeURIComponent(targetEmail), {
+        headers: { 'Authorization': 'Bearer ' + getBearerToken() }
+      });
+      const data = await res.json();
+      if (data.status !== 'success') {
+        showToast('❌ Failed to fetch user detail.');
+        return;
+      }
+      const u = data.user;
+      const logs = data.logs || [];
+      
+      const modal = document.createElement('div');
+      modal.className = 'admin-modal-overlay';
+      modal.innerHTML = '<div class="admin-modal-content">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md)">' +
+          '<h3>User Gameplay Detail: ' + esc(u.email) + '</h3>' +
+          '<button class="btn btn--ghost" id="btn-close-user-modal">✕ Close</button>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin-bottom:var(--space-lg);font-size:13px;background:var(--bg-secondary);padding:var(--space-md);border-radius:var(--border-radius-md)">' +
+          '<div><strong>First Registered:</strong> ' + (u.created_at || 'N/A') + '</div>' +
+          '<div><strong>Last Active:</strong> ' + (u.last_active_at || 'N/A') + '</div>' +
+          '<div><strong>IT Mission:</strong> ' + (u.it_played ? ('Played (' + u.it_score + ' pts)') : 'Not Played') + '</div>' +
+          '<div><strong>OT Mission:</strong> ' + (u.ot_played ? ('Played (' + u.ot_score + ' pts)') : 'Not Played') + '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:var(--space-lg);background:var(--bg-secondary);padding:var(--space-md);border-radius:var(--border-radius-md)">' +
+          '<h4 style="margin-bottom:var(--space-sm)">Attempt Management Controls</h4>' +
+          '<div style="display:flex;gap:var(--space-sm);align-items:center">' +
+            '<button class="btn btn--primary" id="btn-reset-user-att">🔄 Reset Attempts Counter (Allow Replay)</button>' +
+          '</div>' +
+        '</div>' +
+        '<h4>Attempt History Logs (' + logs.length + ')</h4>' +
+        '<div class="admin-table-wrapper">' +
+          '<table class="admin-table">' +
+            '<thead><tr><th>Date</th><th>Mission</th><th>Score</th><th>Grade</th></tr></thead>' +
+            '<tbody>' + logs.map(l => '<tr><td>' + (l.completed_at || '') + '</td><td>' + l.mission_id + '</td><td>' + l.score + '</td><td>' + l.grade + '</td></tr>').join('') + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>';
+      
+      document.body.appendChild(modal);
+
+      modal.querySelector('#btn-close-user-modal').addEventListener('click', () => modal.remove());
+      modal.querySelector('#btn-reset-user-att').addEventListener('click', async () => {
+        const rRes = await fetch('/api/admin/user/reset-attempts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getBearerToken() },
+          body: JSON.stringify({ email: targetEmail })
+        });
+        const rData = await rRes.json();
+        if (rData.status === 'success') {
+          showToast('✅ Attempts reset for ' + targetEmail);
+          modal.remove();
+          nav('admin');
+        } else {
+          showToast('❌ ' + rData.message);
+        }
+      });
+
+    } catch(err) {
+      console.error(err);
     }
   }
 
@@ -927,6 +1496,7 @@
         app.innerHTML = screenResult(data);
         break;
       case 'leaderboard': app.innerHTML = screenLeaderboard(); break;
+      case 'admin': app.innerHTML = await renderAdminDashboardHtml(); initAdminDashboardEvents(); break;
       default: app.innerHTML = screenLanding();
     }
     window.scrollTo({top:0,behavior:'smooth'});
@@ -934,7 +1504,7 @@
 
   function screenLanding() {
     const run = activeRun();
-    const resumeBtn = run ? '<button class="btn btn--primary btn--lg" id="tb-resume-' + run.mission + '">⏯ RESUME ' + run.mission + ' MISSION (' + runProgress(run).done + '/' + runProgress(run).total + ')</button>' : '';
+    const resumeBtn = run ? '<button class="btn btn--primary btn--lg" id="tb-resume-' + run.mission + '">⏳ RESUME ' + run.mission + ' MISSION (' + runProgress(run).done + '/' + runProgress(run).total + ')</button>' : '';
     return '<div class="landing scene-enter"><div class="landing__logo">' + ShieldLogo + '</div><h1 class="landing__title">CYBER SHIFT</h1><p class="landing__tagline">Your workday looks normal.<br/>Then <strong>one message</strong> changes the situation.<br/><br/>Make the right calls.<br/>Protect the business. Protect the plant.</p><div class="landing__cta-group">' + resumeBtn + '<button class="btn ' + (run ? 'btn--secondary' : 'btn--primary btn--lg') + '" id="btn-start">▶ ENTER MISSION SELECT</button><button class="btn btn--secondary" id="btn-howto">How to Play</button><button class="btn btn--ghost" id="btn-lb">🏆 Leaderboard</button></div><div class="landing__version">v' + GAME_VERSION.gameVersion + ' · Build ' + GAME_VERSION.buildVersion + '</div><div class="privacy-notice">🔒 Single-Play Policy Active: 1 attempt allowed per user per mission. Authenticated via SMTP OTP.</div></div>';
   }
 
@@ -966,7 +1536,7 @@
         const run = loadRun(mission);
         if (run) {
           const p = runProgress(run);
-          status = '<div class="inprogress-box"><div class="inprogress-box__row"><span>⏯ IN PROGRESS — ' + p.done + '/' + p.total + ' situations</span><span>Resume ▶</span></div><div class="inprogress-box__bar"><span style="width:' + p.pct + '%"></span></div></div>';
+          status = '<div class="inprogress-box"><div class="inprogress-box__row"><span>⏳ IN PROGRESS — ' + p.done + '/' + p.total + ' situations</span><span>Resume ▶</span></div><div class="inprogress-box__bar"><span style="width:' + p.pct + '%"></span></div></div>';
         } else {
           status = '<div style="margin-top:var(--space-md);font-family:var(--font-mono);font-size:var(--font-size-xs);color:var(--accent-cyan)">▶ READY TO PLAY · ' + SCENES_PER_MISSION + ' situations · 1 attempt</div>';
         }
@@ -1077,6 +1647,9 @@
     if (id === 'tb-home' || id === 'tb-home-brand') { leaveMissionTo('landing'); return; }
     if (id === 'tb-missions') { leaveMissionTo('missionselect'); return; }
     if (id === 'tb-lb') { leaveMissionTo('leaderboard'); return; }
+  if (id === 'tb-admin' || id === 'tb-admin-menu') { toggleUserMenu(false); leaveMissionTo('admin'); return; }
+  if (id === 'btn-admin-to-player') { leaveMissionTo('landing'); return; }
+  if (id === 'btn-admin-refresh') { nav('admin'); return; }
     if (id === 'tb-howto') { toggleUserMenu(false); leaveMissionTo('howtoplay'); return; }
     if (id === 'tb-resume-IT' || id === 'tb-resume-OT') { resumeRun(id.slice(-2)); return; }
 
@@ -1144,7 +1717,7 @@
 
         const ov = document.getElementById('auth-modal-overlay');
         if (ov) ov.remove();
-        nav('missionselect');
+        if (currentUser && currentUser.isAdmin) { nav('admin'); } else { nav('missionselect'); }
       } else {
         authErrorMsg = res.data.message || 'Invalid OTP code.';
         renderAuthModal();
@@ -1180,7 +1753,7 @@
     }
 
     // Navigation
-    if (id === 'btn-start') { nav('missionselect'); return; }
+    if (id === 'btn-start') { if (currentUser && currentUser.isAdmin) { nav('admin'); } else { nav('missionselect'); } return; }
     if (id === 'btn-howto') { nav('howtoplay'); return; }
     if (id === 'btn-back' || id === 'btn-backsel') { nav(id==='btn-backsel'?'missionselect':'landing'); return; }
     if (id === 'btn-lb') { nav('leaderboard'); return; }
@@ -1290,9 +1863,9 @@
       const feedback = {
         best: ['✓ SAFEST CHOICE', 'Well done!', 'correct'],
         ok: ['~ PARTLY RIGHT', 'Not quite the safest choice.', 'partial'],
-        risky: ['✗ RISKY CHOICE', 'That was risky.', 'wrong'],
-        critical: ['✗ DANGEROUS CHOICE', 'That could cause real harm.', 'wrong']
-      }[result.decision.grade] || ['✗ RISKY CHOICE', 'That was risky.', 'wrong'];
+        risky: ['✕ RISKY CHOICE', 'That was risky.', 'wrong'],
+        critical: ['✕ DANGEROUS CHOICE', 'That could cause real harm.', 'wrong']
+      }[result.decision.grade] || ['✕ RISKY CHOICE', 'That was risky.', 'wrong'];
       const label = feedback[0];
       const cls = feedback[2];
       const bestHint = !isCorr && result.bestDecision ? '<div class="consequence__best"><span>✅ The safest choice:</span> ' + esc(result.bestDecision.text) + '</div>' : '';
@@ -1393,3 +1966,5 @@
   nav('landing');
 
 })();
+
+

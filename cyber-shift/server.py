@@ -1,15 +1,24 @@
 """
 CYBER SHIFT — Flask Backend Server
-Handles API endpoints, static UI serving, OTP authentication, and single-attempt enforcement.
+Handles API endpoints, static UI serving, OTP authentication, dynamic question configuration,
+attempt limits enforcement, and Enterprise Admin Dashboard REST APIs.
 """
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response
 import os
 import json
 import re
-from config import SERVER_HOST, SERVER_PORT, SMTP_HOST, SMTP_PORT, SMTP_FROM, DEV_SHOW_OTP_IN_RESPONSE, ALLOWED_DOMAINS
+import csv
+import io
+import datetime
+
+from config import (SERVER_HOST, SERVER_PORT, SMTP_HOST, SMTP_PORT, SMTP_FROM, 
+                    DEV_SHOW_OTP_IN_RESPONSE, ALLOWED_DOMAINS, ADMIN_EMAILS, is_admin_email)
 from database import (init_db, create_otp, verify_otp, get_user_by_session, get_session_revocation_reason,
-                      delete_session, record_mission_completion, get_db)
+                      delete_session, record_mission_completion, get_db, get_all_config, save_game_config_item,
+                      log_audit_action, get_audit_logs, get_admin_dashboard_stats, get_all_users_admin_view,
+                      get_user_detailed_progress, reset_user_attempts, get_questions_summary,
+                      get_effective_max_attempts, get_user_attempt_counts)
 
 app = Flask(__name__, static_folder=".", static_url_path="")
 
@@ -38,6 +47,7 @@ def require_session():
     token = get_bearer_token()
     user = get_user_by_session(token)
     if user and is_domain_allowed(user["email"]):
+        user["isAdmin"] = is_admin_email(user["email"])
         return user, None
     if user:
         delete_session(token)
@@ -47,6 +57,19 @@ def require_session():
     else:
         code, message = "session_expired", "Invalid or expired session. Please log in again."
     return None, (jsonify({"status": "error", "code": code, "message": message}), 401)
+
+def require_admin():
+    """Resolves bearer token and verifies administrator privileges."""
+    user, error = require_session()
+    if error:
+        return None, error
+    if not is_admin_email(user["email"]):
+        return None, (jsonify({
+            "status": "error",
+            "code": "admin_access_required",
+            "message": "Access restricted: Administrator privileges are required to view or modify dashboard settings."
+        }), 403)
+    return user, None
 
 # Initialize database on startup
 with app.app_context():
@@ -63,18 +86,24 @@ def serve_static(path):
     return send_from_directory(".", "index.html")
 
 # ==============================================================================
-# API ENDPOINTS
+# PUBLIC & AUTHENTICATION ENDPOINTS
 # ==============================================================================
 
 @app.route("/api/config", methods=["GET"])
 def get_public_config():
-    """Returns public SMTP configuration info for verification."""
+    """Returns public SMTP configuration info and current game settings for verification."""
+    cfg = get_all_config()
     return jsonify({
         "smtpHost": SMTP_HOST,
         "smtpPort": SMTP_PORT,
         "smtpFrom": SMTP_FROM,
         "devMode": DEV_SHOW_OTP_IN_RESPONSE,
-        "allowedDomains": ALLOWED_DOMAINS
+        "allowedDomains": ALLOWED_DOMAINS,
+        "adminEmails": ADMIN_EMAILS,
+        "maxAttemptsPerUser": cfg["max_attempts_per_user"],
+        "itQuestionsPerGame": cfg["it_questions_per_game"],
+        "otQuestionsPerGame": cfg["ot_questions_per_game"],
+        "categoryConfig": cfg["category_config"]
     })
 
 @app.route("/api/auth/request-otp", methods=["POST"])
@@ -92,19 +121,26 @@ def request_otp():
     try:
         from emailer import send_otp_email
         
-        # Check if user already completed both missions
+        # Check if user already reached their attempt limit
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
         user = cursor.fetchone()
         conn.close()
         
-        if user and user["it_played"] == 1 and user["ot_played"] == 1:
-            return jsonify({
-                "status": "completed_all",
-                "message": "You have already completed both IT and OT missions! Only 1 attempt is permitted per user.",
-                "user": dict(user)
-            }), 403
+        if user:
+            u_dict = dict(user)
+            max_allowed = get_effective_max_attempts(u_dict)
+            it_completed, _, _ = get_user_attempt_counts(email, "IT")
+            ot_completed, _, _ = get_user_attempt_counts(email, "OT")
+            
+            # Non-admin users who completed all allowed attempts receive an informative lock message
+            if not is_admin_email(email) and it_completed >= max_allowed and ot_completed >= max_allowed:
+                return jsonify({
+                    "status": "completed_all",
+                    "message": f"You have already completed all {max_allowed} permitted attempt(s) for both IT and OT missions!",
+                    "user": u_dict
+                }), 403
             
         otp_code = create_otp(email)
         sent, smtp_msg = send_otp_email(email, otp_code)
@@ -116,7 +152,6 @@ def request_otp():
             "smtpDelivered": sent
         }
         
-        # Include OTP in response if DEV_SHOW_OTP_IN_RESPONSE is enabled for easy offline testing
         if DEV_SHOW_OTP_IN_RESPONSE:
             res["devOtp"] = otp_code
             res["devNotice"] = "DEV MODE: OTP shown here for offline testing without live SMTP server."
@@ -141,11 +176,15 @@ def verify_otp_endpoint():
     result, err = verify_otp(email, otp_code)
     if err:
         return jsonify({"status": "error", "message": err}), 400
+    
+    user = result["user"]
+    user["isAdmin"] = is_admin_email(email)
+    user["effectiveMaxAttempts"] = get_effective_max_attempts(user)
         
     return jsonify({
         "status": "success",
         "token": result["token"],
-        "user": result["user"],
+        "user": user,
         "expiresAt": result["expires_at"]
     }), 200
 
@@ -157,10 +196,16 @@ def logout_endpoint():
 
 @app.route("/api/user/status", methods=["GET"])
 def get_user_status():
-    """Returns current user status and single-play restriction state."""
+    """Returns current user status, single-play restriction state, and admin flag."""
     user, error = require_session()
     if error:
         return error
+    
+    user["effectiveMaxAttempts"] = get_effective_max_attempts(user)
+    it_completed, _, _ = get_user_attempt_counts(user["email"], "IT")
+    ot_completed, _, _ = get_user_attempt_counts(user["email"], "OT")
+    user["itCompletedAttempts"] = it_completed
+    user["otCompletedAttempts"] = ot_completed
         
     return jsonify({
         "status": "success",
@@ -170,7 +215,7 @@ def get_user_status():
 
 @app.route("/api/mission/complete", methods=["POST"])
 def complete_mission_endpoint():
-    """Records mission completion and permanently locks further attempts for that mission."""
+    """Records mission completion and updates attempt count."""
     user, error = require_session()
     if error:
         return error
@@ -193,16 +238,19 @@ def complete_mission_endpoint():
     
     if not success:
         return jsonify({"status": "forbidden", "message": res}), 403
+    
+    res["isAdmin"] = is_admin_email(user["email"])
+    res["effectiveMaxAttempts"] = get_effective_max_attempts(res)
         
     return jsonify({
         "status": "success",
-        "message": "Mission results recorded. One-time play locked for this mission.",
+        "message": "Mission results recorded successfully.",
         "user": res
     }), 200
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
-    """Campaign dashboard showing completion stats across participants."""
+    """Campaign dashboard showing top completion scores across participants."""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
@@ -214,7 +262,6 @@ def get_leaderboard():
     """)
     rows = [dict(r) for r in cursor.fetchall()]
     
-    # Anonymize email addresses for privacy (e.g. j***@company.com)
     for r in rows:
         em = r["email"]
         if "@" in em:
@@ -238,14 +285,311 @@ def get_leaderboard():
         "topScores": rows
     })
 
+# ==============================================================================
+# ENTERPRISE ADMIN DASHBOARD ENDPOINTS (PROTECTED BY BACKEND ADMIN AUTH)
+# ==============================================================================
+
+@app.route("/api/admin/config", methods=["GET"])
+def get_admin_config():
+    """Returns administrative configuration, question category allocations, and attempt limits."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    cfg = get_all_config()
+    summary = get_questions_summary()
+    
+    return jsonify({
+        "status": "success",
+        "adminEmails": ADMIN_EMAILS,
+        "config": cfg,
+        "availableQuestionsSummary": summary
+    }), 200
+
+@app.route("/api/admin/config", methods=["POST"])
+def update_admin_config():
+    """Saves updated max attempts, game-level question counts, and category question distribution."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    data = request.get_json(silent=True) or {}
+    
+    max_attempts = data.get("max_attempts_per_user")
+    it_q_count = data.get("it_questions_per_game")
+    ot_q_count = data.get("ot_questions_per_game")
+    cat_cfg = data.get("category_config")
+    
+    summary = get_questions_summary()
+    
+    # Validation Rule 1: Attempt limits must be >= 1
+    if max_attempts is not None:
+        try:
+            max_attempts = int(max_attempts)
+            if max_attempts < 1:
+                return jsonify({"status": "error", "message": "Max attempts per user must be at least 1."}), 400
+            save_game_config_item(admin_user["email"], "max_attempts_per_user", str(max_attempts))
+        except ValueError:
+            return jsonify({"status": "error", "message": "Invalid max attempts value."}), 400
+
+    # Category & Game Questions Validation Rules
+    if cat_cfg is not None and isinstance(cat_cfg, dict):
+        for mission in ("IT", "OT"):
+            if mission in cat_cfg and isinstance(cat_cfg[mission], dict):
+                mission_cats = cat_cfg[mission]
+                avail_cats = summary.get(mission, {})
+                
+                cat_sum = 0
+                for cat_name, count_val in mission_cats.items():
+                    try:
+                        c_num = int(count_val)
+                    except ValueError:
+                        return jsonify({"status": "error", "message": f"Invalid question count for category '{cat_name}'."}), 400
+                    
+                    avail_count = avail_cats.get(cat_name, 0)
+                    if c_num > avail_count:
+                        return jsonify({
+                            "status": "error",
+                            "message": f"Category '{cat_name}' in {mission} configured with {c_num} questions, but only {avail_count} questions are available."
+                        }), 400
+                    cat_sum += c_num
+                
+                target_game_count = int(it_q_count if mission == "IT" else ot_q_count)
+                if cat_sum != target_game_count:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Sum of {mission} category questions ({cat_sum}) does not match the target questions per game ({target_game_count})."
+                    }), 400
+
+        if it_q_count is not None:
+            save_game_config_item(admin_user["email"], "it_questions_per_game", str(it_q_count))
+        if ot_q_count is not None:
+            save_game_config_item(admin_user["email"], "ot_questions_per_game", str(ot_q_count))
+            
+        save_game_config_item(admin_user["email"], "category_config", json.dumps(cat_cfg))
+
+    log_audit_action(
+        admin_user["email"],
+        "UPDATE_CONFIG",
+        f"Updated configuration: max_attempts={max_attempts}, IT_Q={it_q_count}, OT_Q={ot_q_count}"
+    )
+
+    return jsonify({
+        "status": "success",
+        "message": "Configuration successfully validated and saved.",
+        "config": get_all_config()
+    }), 200
+
+@app.route("/api/admin/users", methods=["GET"])
+def get_admin_users():
+    """Returns interactive user list with progress, attempt usage, and scores."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    users = get_all_users_admin_view()
+    stats = get_admin_dashboard_stats()
+    
+    return jsonify({
+        "status": "success",
+        "stats": stats,
+        "users": users
+    }), 200
+
+@app.route("/api/admin/user/<email>", methods=["GET"])
+def get_admin_user_detail(email):
+    """Returns detailed attempt history and decision breakdown for a specific user."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    detail = get_user_detailed_progress(email)
+    if not detail:
+        return jsonify({"status": "error", "message": "User not found."}), 404
+        
+    return jsonify({
+        "status": "success",
+        "user": detail["user"],
+        "logs": detail["logs"],
+        "attempts": detail["attempts"]
+    }), 200
+
+@app.route("/api/admin/user/reset-attempts", methods=["POST"])
+def reset_user_attempts_endpoint():
+    """Resets attempts or modifies attempt limits for a specific user."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    data = request.get_json(silent=True) or {}
+    target_email = data.get("email", "").strip().lower()
+    new_max = data.get("newMaxAttempts", None)
+    
+    if not target_email:
+        return jsonify({"status": "error", "message": "Target email is required."}), 400
+        
+    success, msg = reset_user_attempts(admin_user["email"], target_email, new_max)
+    if not success:
+        return jsonify({"status": "error", "message": msg}), 400
+        
+    return jsonify({
+        "status": "success",
+        "message": msg
+    }), 200
+
+@app.route("/api/admin/questions", methods=["GET"])
+def get_admin_questions():
+    """Returns all questions grouped by mission and category."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM questions ORDER BY mission, category, id")
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    
+    summary = get_questions_summary()
+    
+    return jsonify({
+        "status": "success",
+        "questions": rows,
+        "summary": summary
+    }), 200
+
+@app.route("/api/admin/questions/edit", methods=["POST"])
+def edit_question_endpoint():
+    """Edits question parameters or toggles active status."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    data = request.get_json(silent=True) or {}
+    q_id = data.get("id", "")
+    is_active = 1 if data.get("isActive", True) else 0
+    
+    if not q_id:
+        return jsonify({"status": "error", "message": "Question ID required."}), 400
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE questions SET is_active = ? WHERE id = ?", (is_active, q_id))
+    conn.commit()
+    conn.close()
+    
+    log_audit_action(admin_user["email"], "EDIT_QUESTION", f"Updated question {q_id} (is_active={is_active})")
+    
+    return jsonify({"status": "success", "message": f"Question {q_id} updated."}), 200
+
+@app.route("/api/admin/analytics", methods=["GET"])
+def get_admin_analytics():
+    """Returns comprehensive campaign analytics, category performance, and frequently missed questions."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    stats = get_admin_dashboard_stats()
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT decisions_json, mission_id FROM mission_logs")
+    logs = cursor.fetchall()
+    
+    category_stats = {}
+    question_errors = {}
+    
+    for l in logs:
+        try:
+            m_id = l["mission_id"].upper()
+            dec = json.loads(l["decisions_json"])
+            if isinstance(dec, dict):
+                for q_id, val in dec.items():
+                    grade = val.get("grade") if isinstance(val, dict) else val
+                    is_correct = (grade == "best")
+                    
+                    question_errors.setdefault(q_id, {"attempts": 0, "incorrect": 0})
+                    question_errors[q_id]["attempts"] += 1
+                    if not is_correct:
+                        question_errors[q_id]["incorrect"] += 1
+        except Exception:
+            pass
+            
+    missed_questions = []
+    for q_id, data in question_errors.items():
+        if data["attempts"] > 0:
+            err_rate = round((data["incorrect"] / data["attempts"]) * 100, 1)
+            missed_questions.append({
+                "questionId": q_id,
+                "attempts": data["attempts"],
+                "incorrect": data["incorrect"],
+                "errorRatePct": err_rate
+            })
+            
+    missed_questions.sort(key=lambda x: x["errorRatePct"], reverse=True)
+    conn.close()
+    
+    return jsonify({
+        "status": "success",
+        "stats": stats,
+        "mostMissedQuestions": missed_questions[:10]
+    }), 200
+
+@app.route("/api/admin/analytics/export", methods=["GET"])
+def export_analytics_csv():
+    """Generates and streams a downloadable CSV report of all users and gameplay scores."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    users = get_all_users_admin_view()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # CSV Header
+    writer.writerow([
+        "User ID", "Email Address", "First Sign-in", "Last Active", 
+        "Game Status", "Stage", "Max Attempts Allowed", "Attempts Used", "Attempts Remaining",
+        "IT Played", "IT Score", "IT Grade", "OT Played", "OT Score", "OT Grade", "Total Score",
+        "Questions Attempted", "Questions Correct", "Questions Incorrect", "Completion %"
+    ])
+    
+    for u in users:
+        writer.writerow([
+            u["id"], u["email"], u["createdAt"], u["lastActiveAt"],
+            u["status"], u["stage"], u["maxAttempts"], u["attemptsUsed"], u["attemptsRemaining"],
+            "Yes" if u["itPlayed"] else "No", u["itScore"] or 0, u["itGrade"] or "N/A",
+            "Yes" if u["otPlayed"] else "No", u["otScore"] or 0, u["otGrade"] or "N/A", u["totalScore"],
+            u["questionsAttempted"], u["questionsCorrect"], u["questionsIncorrect"], f"{u['completionPct']}%"
+        ])
+        
+    log_audit_action(admin_user["email"], "EXPORT_CSV", "Exported campaign user progress report to CSV.")
+    
+    response = Response(output.getvalue(), mimetype="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=Cyber_Shift_Campaign_Report.csv"
+    return response
+
+@app.route("/api/admin/audit-logs", methods=["GET"])
+def get_admin_audit_logs():
+    """Returns timeline of administrative actions."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+        
+    logs = get_audit_logs(limit=100)
+    return jsonify({
+        "status": "success",
+        "auditLogs": logs
+    }), 200
+
 if __name__ == "__main__":
     init_db()
-    print("=" * 70)
-    print(f"  CYBER SHIFT SERVER RUNNING")
+    print("=" * 75)
+    print(f"  CYBER SHIFT ENTERPRISE SERVER RUNNING")
     print(f"  SMTP Server: {SMTP_HOST}:{SMTP_PORT} | From: {SMTP_FROM}")
-    print(f"  Single-Play Enforcement: Active (1 Attempt per User per Mission)")
-    print(f"  Allowed Domains: {', '.join(ALLOWED_DOMAINS) if ALLOWED_DOMAINS else 'ANY (ALLOW_DOMAIN is empty)'}")
-    print(f"  Parallel Sessions: Blocked (new login signs out other sessions)")
+    print(f"  Admin Email Accounts: {', '.join(ADMIN_EMAILS)}")
+    print(f"  Allowed Domains: {', '.join(ALLOWED_DOMAINS) if ALLOWED_DOMAINS else 'ANY'}")
     print(f"  URL: http://localhost:{SERVER_PORT}")
-    print("=" * 70)
+    print("=" * 75)
     app.run(host=SERVER_HOST, port=SERVER_PORT, debug=True)
