@@ -26,7 +26,10 @@ EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 def get_bearer_token() -> str:
     auth_header = request.headers.get("Authorization", "")
-    return auth_header.replace("Bearer ", "").strip()
+    if auth_header:
+        return auth_header.replace("Bearer ", "").strip()
+    return request.args.get("token", "").strip()
+
 
 def is_domain_allowed(email: str) -> bool:
     """True if the email's domain is on the ALLOW_DOMAIN list (an empty list allows all)."""

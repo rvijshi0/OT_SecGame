@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CYBER SHIFT — Bundled Application
  * Game engine, screens, session management and UI.
  * Scenario content lives in game-data.js (loaded first by index.html).
@@ -318,7 +318,7 @@
   // ================================================================
   // LOGO & SCENE ILLUSTRATIONS
   // ================================================================
-  const ShieldLogo = '<svg viewBox="0 0 80 90" width="80" height="90" role="img" aria-label="Cyber Shift shield logo"><defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#06d6a0"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient><linearGradient id="si" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#06d6a0" stop-opacity="0.2"/><stop offset="100%" stop-color="#3b82f6" stop-opacity="0.2"/></linearGradient></defs><path d="M40 5 L72 20 L72 50 Q72 72 40 85 Q8 72 8 50 L8 20Z" fill="url(#si)" stroke="url(#sg)" stroke-width="2.5"/><path d="M40 18 L40 35 M30 28 L50 28" stroke="url(#sg)" stroke-width="2" stroke-linecap="round" opacity="0.6"/><rect x="30" y="42" width="20" height="18" rx="3" fill="url(#sg)" opacity="0.8"/><path d="M35 42 L35 36 Q35 28 40 28 Q45 28 45 36 L45 42" fill="none" stroke="url(#sg)" stroke-width="2.5" stroke-linecap="round"/><circle cx="40" cy="51" r="3" fill="#0a0e1a"/><line x1="40" y1="54" x2="40" y2="57" stroke="#0a0e1a" stroke-width="2" stroke-linecap="round"/><circle cx="40" cy="45" r="35" fill="none" stroke="url(#sg)" stroke-width="0.5" opacity="0.2"><animate attributeName="r" values="35;40;35" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.2;0.05;0.2" dur="3s" repeatCount="indefinite"/></circle></svg>';
+  const ShieldLogo = '<svg viewBox="0 0 80 90" width="80" height="90" role="img" aria-label="Cyber Shift shield logo"><defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4500"/><stop offset="100%" stop-color="#ff8c00"/></linearGradient><linearGradient id="si" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4500" stop-opacity="0.18"/><stop offset="100%" stop-color="#ff8c00" stop-opacity="0.12"/></linearGradient></defs><path d="M40 5 L72 20 L72 50 Q72 72 40 85 Q8 72 8 50 L8 20Z" fill="url(#si)" stroke="url(#sg)" stroke-width="2.5"/><path d="M40 18 L40 35 M30 28 L50 28" stroke="url(#sg)" stroke-width="2" stroke-linecap="round" opacity="0.6"/><rect x="30" y="42" width="20" height="18" rx="3" fill="url(#sg)" opacity="0.85"/><path d="M35 42 L35 36 Q35 28 40 28 Q45 28 45 36 L45 42" fill="none" stroke="url(#sg)" stroke-width="2.5" stroke-linecap="round"/><circle cx="40" cy="51" r="3" fill="#080c18"/><line x1="40" y1="54" x2="40" y2="57" stroke="#080c18" stroke-width="2" stroke-linecap="round"/><circle cx="40" cy="45" r="35" fill="none" stroke="url(#sg)" stroke-width="0.5" opacity="0.25"><animate attributeName="r" values="35;42;35" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.25;0.05;0.25" dur="3s" repeatCount="indefinite"/></circle></svg>';
 
   const ART_FONT = 'font-family="Inter,system-ui,sans-serif" font-weight="800" text-anchor="middle"';
   const artBadge = (x, y, color, glyph) => '<circle cx="' + x + '" cy="' + y + '" r="14" fill="' + color + '"/><text x="' + x + '" y="' + (y + 5.5) + '" font-size="16" fill="#fff" ' + ART_FONT + '>' + glyph + '</text>';
@@ -353,7 +353,292 @@
 
   function renderArt(key) {
     const inner = ART[key] || ART.alarm;
-    return '<svg viewBox="0 0 200 150" class="scene-art__svg" role="img" aria-hidden="true"><circle cx="100" cy="76" r="68" fill="#3b82f6" opacity=".08"/><circle cx="100" cy="76" r="50" fill="#06d6a0" opacity=".06"/>' + inner + '</svg>';
+    return '<svg viewBox="0 0 200 150" class="scene-art__svg" role="img" aria-hidden="true"><circle cx="100" cy="76" r="68" fill="#ff4500" opacity=".06"/><circle cx="100" cy="76" r="50" fill="#00d4ff" opacity=".04"/>' + inner + '</svg>';
+  }
+
+  // ================================================================
+  // 3D CHARACTER SVGs — isometric low-poly figures
+  // ================================================================
+  // IT Worker: office professional at computer
+  const CHAR_IT = `<svg viewBox="0 0 120 180" width="120" height="180" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cit1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient>
+      <linearGradient id="cit2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fde68a"/><stop offset="100%" stop-color="#f59e0b"/></linearGradient>
+      <linearGradient id="cit3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#0f2040"/></linearGradient>
+    </defs>
+    <!-- Shadow -->
+    <ellipse cx="60" cy="175" rx="30" ry="5" fill="rgba(0,0,0,0.3)"/>
+    <!-- Legs -->
+    <rect x="45" y="130" width="12" height="38" rx="4" fill="#1e3a5f"/>
+    <rect x="63" y="130" width="12" height="38" rx="4" fill="#1e3a5f"/>
+    <!-- Shoes -->
+    <ellipse cx="51" cy="168" rx="9" ry="4" fill="#111827"/>
+    <ellipse cx="69" cy="168" rx="9" ry="4" fill="#111827"/>
+    <!-- Body/Suit -->
+    <rect x="38" y="82" width="44" height="52" rx="6" fill="url(#cit1)"/>
+    <!-- Tie -->
+    <polygon points="60,88 63,88 61,118 59,118" fill="#ff4500"/>
+    <!-- Collar -->
+    <polygon points="52,82 60,92 68,82" fill="#e8eef8" opacity="0.9"/>
+    <!-- Arms -->
+    <rect x="18" y="84" width="20" height="10" rx="4" fill="url(#cit1)"/>
+    <rect x="82" y="84" width="20" height="10" rx="4" fill="url(#cit1)"/>
+    <!-- Hands -->
+    <ellipse cx="16" cy="90" rx="7" ry="6" fill="url(#cit2)"/>
+    <ellipse cx="104" cy="90" rx="7" ry="6" fill="url(#cit2)"/>
+    <!-- Neck -->
+    <rect x="54" y="68" width="12" height="16" rx="4" fill="url(#cit2)"/>
+    <!-- Head -->
+    <ellipse cx="60" cy="56" rx="22" ry="24" fill="url(#cit2)"/>
+    <!-- Hair -->
+    <path d="M38 50 Q40 30 60 28 Q80 30 82 50 Q76 38 60 36 Q44 38 38 50Z" fill="#3b2006"/>
+    <!-- Eyes -->
+    <ellipse cx="52" cy="54" rx="4" ry="4" fill="#fff"/>
+    <ellipse cx="68" cy="54" rx="4" ry="4" fill="#fff"/>
+    <circle cx="53" cy="55" r="2.5" fill="#1a1a2e"/>
+    <circle cx="69" cy="55" r="2.5" fill="#1a1a2e"/>
+    <!-- Laptop in hands -->
+    <rect x="22" y="100" width="76" height="48" rx="4" fill="url(#cit3)" stroke="#2a4070" stroke-width="1.5"/>
+    <rect x="26" y="104" width="68" height="36" rx="2" fill="#0d1829"/>
+    <!-- Screen glow -->
+    <rect x="28" y="106" width="64" height="32" rx="2" fill="none" stroke="#00d4ff" stroke-width="0.5" opacity="0.6"/>
+    <rect x="30" y="108" width="20" height="3" rx="1" fill="#ff4500" opacity="0.7"/>
+    <rect x="30" y="114" width="40" height="2" rx="1" fill="#00d4ff" opacity="0.5"/>
+    <rect x="30" y="119" width="32" height="2" rx="1" fill="#00d4ff" opacity="0.4"/>
+    <rect x="30" y="124" width="50" height="2" rx="1" fill="#4a5878" opacity="0.5"/>
+    <rect x="30" y="129" width="36" height="2" rx="1" fill="#4a5878" opacity="0.4"/>
+    <!-- Headset -->
+    <path d="M38 44 Q37 28 60 26 Q83 28 82 44" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round"/>
+    <rect x="34" y="42" width="7" height="10" rx="3" fill="#374151"/>
+    <rect x="79" y="42" width="7" height="10" rx="3" fill="#374151"/>
+    <line x1="34" y1="52" x2="32" y2="60" stroke="#374151" stroke-width="2"/>
+    <circle cx="31" cy="62" r="3" fill="#00d4ff" opacity="0.8"/>
+  </svg>`;
+
+  // OT Worker: industrial/factory operator in hard hat
+  const CHAR_OT = `<svg viewBox="0 0 120 180" width="120" height="180" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cot1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d97706"/><stop offset="100%" stop-color="#b45309"/></linearGradient>
+      <linearGradient id="cot2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fde68a"/><stop offset="100%" stop-color="#f59e0b"/></linearGradient>
+      <linearGradient id="cot3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#374151"/><stop offset="100%" stop-color="#1f2937"/></linearGradient>
+    </defs>
+    <!-- Shadow -->
+    <ellipse cx="60" cy="175" rx="30" ry="5" fill="rgba(0,0,0,0.3)"/>
+    <!-- Boots -->
+    <rect x="44" y="148" width="14" height="22" rx="3" fill="#1f2937"/>
+    <rect x="62" y="148" width="14" height="22" rx="3" fill="#1f2937"/>
+    <rect x="41" y="164" width="20" height="8" rx="2" fill="#111827"/>
+    <rect x="59" y="164" width="20" height="8" rx="2" fill="#111827"/>
+    <!-- Pants -->
+    <rect x="43" y="118" width="14" height="34" rx="3" fill="#374151"/>
+    <rect x="63" y="118" width="14" height="34" rx="3" fill="#374151"/>
+    <!-- Vest/Safety jacket -->
+    <rect x="34" y="78" width="52" height="44" rx="6" fill="url(#cot3)"/>
+    <!-- Safety stripes -->
+    <rect x="34" y="98" width="52" height="6" fill="#f59e0b" opacity="0.85"/>
+    <!-- Hi-vis badge -->
+    <rect x="52" y="82" width="16" height="10" rx="2" fill="#ff4500" opacity="0.8"/>
+    <!-- Arms -->
+    <rect x="14" y="80" width="20" height="10" rx="4" fill="url(#cot3)"/>
+    <rect x="86" y="80" width="20" height="10" rx="4" fill="url(#cot3)"/>
+    <!-- Hands -->
+    <ellipse cx="12" cy="87" rx="7" ry="6" fill="url(#cot2)"/>
+    <ellipse cx="108" cy="87" rx="7" ry="6" fill="url(#cot2)"/>
+    <!-- Tablet/clipboard in hands -->
+    <rect x="14" y="94" width="36" height="28" rx="3" fill="#0d1829" stroke="#2a4070" stroke-width="1.5"/>
+    <rect x="17" y="97" width="30" height="20" rx="1" fill="#111f38"/>
+    <rect x="19" y="99" width="14" height="2" rx="1" fill="#10b981" opacity="0.8"/>
+    <rect x="19" y="103" width="22" height="1.5" rx="1" fill="#4a5878" opacity="0.6"/>
+    <rect x="19" y="107" width="18" height="1.5" rx="1" fill="#4a5878" opacity="0.5"/>
+    <circle cx="36" cy="107" r="4" fill="#ff4500" opacity="0.7"/>
+    <!-- Neck -->
+    <rect x="54" y="64" width="12" height="16" rx="4" fill="url(#cot2)"/>
+    <!-- Head -->
+    <ellipse cx="60" cy="52" rx="22" ry="24" fill="url(#cot2)"/>
+    <!-- Hard hat -->
+    <path d="M36 48 Q36 24 60 22 Q84 24 84 48Z" fill="url(#cot1)"/>
+    <rect x="30" y="46" width="60" height="6" rx="3" fill="url(#cot1)"/>
+    <!-- Hard hat brim accent -->
+    <rect x="30" y="50" width="60" height="2" rx="1" fill="rgba(255,255,255,0.2)"/>
+    <!-- Face visor hint -->
+    <rect x="44" y="36" width="32" height="4" rx="2" fill="rgba(0,212,255,0.3)"/>
+    <!-- Eyes -->
+    <ellipse cx="52" cy="52" rx="4" ry="4" fill="#fff"/>
+    <ellipse cx="68" cy="52" rx="4" ry="4" fill="#fff"/>
+    <circle cx="53" cy="53" r="2.5" fill="#1a1a2e"/>
+    <circle cx="69" cy="53" r="2.5" fill="#1a1a2e"/>
+    <!-- Ear protection -->
+    <ellipse cx="38" cy="52" rx="5" ry="7" fill="#374151"/>
+    <ellipse cx="82" cy="52" rx="5" ry="7" fill="#374151"/>
+  </svg>`;
+
+  // Scenario-specific character variants by mission type
+  function getCharForScene(scene) {
+    if (!scene) return CHAR_IT;
+    return scene.mission === 'OT' ? CHAR_OT : CHAR_IT;
+  }
+
+  // Render 3D character zone for env panel
+  function renderChar3D(scene) {
+    const charSvg = getCharForScene(scene);
+    return '<div class="char-3d-scene">' +
+      '<div class="char-glow-ring"></div>' +
+      charSvg +
+      '<div class="char-shadow"></div>' +
+    '</div>';
+  }
+
+  // Render 3D character for mission card
+  function renderMissionChar(mission) {
+    const charSvg = mission === 'OT' ? CHAR_OT : CHAR_IT;
+    const bgGrad = mission === 'OT'
+      ? 'radial-gradient(circle at 50% 80%, rgba(255,140,0,0.12) 0%, transparent 70%)'
+      : 'radial-gradient(circle at 50% 80%, rgba(0,212,255,0.10) 0%, transparent 70%)';
+    return '<div class="mission-char-zone">' +
+      '<div class="mission-char-zone__bg" style="background:' + bgGrad + ';"></div>' +
+      '<div class="char-3d">' + charSvg + '</div>' +
+    '</div>';
+  }
+
+  // ================================================================
+  // NARRATION ENGINE — Web Speech API deep male voice
+  // ================================================================
+  const Narrator = (function() {
+    let utterance = null;
+    let bar = null;
+    let barText = null;
+    const synth = window.speechSynthesis;
+    const supported = !!synth;
+
+    function ensureBar() {
+      if (bar) return;
+      bar = document.createElement('div');
+      bar.className = 'narration-bar';
+      bar.setAttribute('role', 'status');
+      bar.setAttribute('aria-live', 'polite');
+      bar.innerHTML = '<span class="narration-bar__icon">🎙️</span>' +
+        '<span class="narration-bar__text"></span>' +
+        '<button class="narration-bar__stop" title="Stop narration" aria-label="Stop narration">&#9632;</button>';
+      document.body.appendChild(bar);
+      barText = bar.querySelector('.narration-bar__text');
+      bar.querySelector('.narration-bar__stop').addEventListener('click', () => stop());
+    }
+
+    function getDeepVoice() {
+      if (!supported) return null;
+      const voices = synth.getVoices();
+      // Prefer a deep US English male voice
+      const preferred = [
+        'Google UK English Male', 'Microsoft David', 'Alex', 'Daniel',
+        'en-US', 'en-GB'
+      ];
+      for (const name of preferred) {
+        const v = voices.find(v => v.name.includes(name) && v.lang.startsWith('en'));
+        if (v) return v;
+      }
+      // Fallback: first English voice
+      return voices.find(v => v.lang.startsWith('en')) || voices[0] || null;
+    }
+
+    function speak(text, label) {
+      if (!supported || !text) return;
+      stop();
+      ensureBar();
+      utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.88;   // slightly slower — more authoritative
+      utterance.pitch = 0.72;  // deep baritone
+      utterance.volume = 0.95;
+      const v = getDeepVoice();
+      if (v) utterance.voice = v;
+
+      utterance.onstart = () => {
+        if (barText) barText.textContent = label || text.substring(0, 60) + '…';
+        if (bar) bar.classList.add('narration-bar--visible');
+      };
+      utterance.onend = utterance.onerror = () => {
+        if (bar) bar.classList.remove('narration-bar--visible');
+        utterance = null;
+      };
+
+      // Chrome sometimes needs a small delay
+      setTimeout(() => { try { synth.speak(utterance); } catch(e) {} }, 80);
+    }
+
+    function stop() {
+      if (supported) { try { synth.cancel(); } catch(e) {} }
+      if (bar) bar.classList.remove('narration-bar--visible');
+      utterance = null;
+    }
+
+    return { speak, stop, supported };
+  })();
+
+  // ================================================================
+  // PARTICLE CANVAS — network node background animation
+  // ================================================================
+  function initParticles() {
+    const canvas = document.createElement('canvas');
+    canvas.id = 'particle-canvas';
+    document.body.insertBefore(canvas, document.body.firstChild);
+    const ctx = canvas.getContext('2d');
+    const PARTICLE_COUNT = 55;
+    const particles = [];
+    let W, H;
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        r: Math.random() * 1.5 + 0.5,
+        c: Math.random() > 0.5 ? '#ff4500' : '#00d4ff'
+      });
+    }
+
+    const CONNECTION_DIST = 140;
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      // Update positions
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      });
+      // Draw connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECTION_DIST) {
+            const alpha = (1 - dist / CONNECTION_DIST) * 0.3;
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(100,130,200,${alpha})`;
+            ctx.lineWidth = 0.5;
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+      // Draw particles
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.c + '88';
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
   }
 
   // ================================================================
@@ -472,9 +757,14 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
   let allowedDomains = [];
   let pendingConfirm = null;
 
+  function getBearerToken() {
+    return authToken || localStorage.getItem(TOKEN_KEY) || '';
+  }
+
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
+
 
   async function apiRequest(endpoint, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -778,7 +1068,9 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       '<nav class="topbar__nav" aria-label="Main navigation">' +
       navBtn('tb-home', '🏠', 'Home', ['landing']) +
       navBtn('tb-missions', '🎯', 'Missions', ['missionselect', 'intro']) +
-      navBtn('tb-lb', '🏆', 'Leaderboard', ['leaderboard']) + (currentUser && currentUser.isAdmin ? navBtn('tb-admin', '👑', 'Admin', ['admin']) : '') +
+      navBtn('tb-lb', '🏆', 'Leaderboard', ['leaderboard']) +
+      navBtn('tb-narration', narration.enabled ? (narration.speaking ? '🗣️' : '🔊') : '🔇', narration.enabled ? (narration.speaking ? 'Speaking...' : 'Voice ON') : 'Voice OFF', ['landing', 'missionselect', 'scene', 'howtoplay', 'leaderboard', 'admin']) +
+      (currentUser && currentUser.isAdmin ? navBtn('tb-admin', '👑', 'Admin', ['admin']) : '') +
       '<div class="topbar__user">' +
       '<button class="topbar__avatar" id="tb-user" aria-haspopup="menu" aria-expanded="false" title="' + esc(email) + '">' + esc(email.charAt(0).toUpperCase()) + '</button>' +
       '<div class="topbar__menu" id="tb-menu" role="menu" hidden>' +
@@ -884,11 +1176,242 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
   }
 
   // ================================================================
+  // NARRATION ENGINE — DEEP MALE VOICE SYNTHESIS
+  // ================================================================
+  const narration = {
+    enabled: localStorage.getItem('cybershift_narration') !== 'false',
+    speaking: false,
+    synth: window.speechSynthesis,
+    utterance: null,
+    maleVoice: null,
+
+    init() {
+      if (!this.synth) return;
+      const loadVoices = () => {
+        try {
+          const voices = this.synth.getVoices();
+          this.maleVoice = voices.find(v => 
+            /natural|online|google uk english male|google us english|microsoft david|david|george|daniel|alex|guy|male/i.test(v.name) && !/female|zira|hazel|samantha|aria|jenny/i.test(v.name)
+          ) || voices.find(v => /male/i.test(v.name)) || voices.find(v => v.lang && v.lang.startsWith('en')) || voices[0] || null;
+        } catch(e) {}
+      };
+      loadVoices();
+      if (this.synth.onvoiceschanged !== undefined) {
+        this.synth.onvoiceschanged = loadVoices;
+      }
+    },
+
+    speak(text) {
+      if (!this.enabled || !this.synth) return;
+      this.stop();
+      if (!text) return;
+
+      const cleanText = String(text).replace(/<[^>]*>/g, '').replace(/https?:\/\/\S+/g, '');
+      const utt = new SpeechSynthesisUtterance(cleanText);
+      if (!this.maleVoice) this.init();
+      if (this.maleVoice) utt.voice = this.maleVoice;
+      utt.pitch = 0.95; // Natural human pitch
+      utt.rate = 0.80;  // Relaxed, clear human speed
+      utt.volume = 1.0;
+
+
+      utt.onstart = () => {
+        this.speaking = true;
+        this.updateUI();
+      };
+      utt.onend = utt.onerror = () => {
+        this.speaking = false;
+        this.updateUI();
+      };
+
+      this.utterance = utt;
+      try {
+        this.synth.speak(utt);
+      } catch (e) {
+        console.warn('[NARRATION ERROR]', e);
+      }
+    },
+
+    stop() {
+      if (this.synth) {
+        try { this.synth.cancel(); } catch(e) {}
+      }
+      this.speaking = false;
+      this.updateUI();
+    },
+
+    toggle() {
+      this.enabled = !this.enabled;
+      localStorage.setItem('cybershift_narration', String(this.enabled));
+      if (!this.enabled) {
+        this.stop();
+      } else if (currentScreen === 'scene') {
+        const s = engine.getCurrentScene();
+        if (s) this.speakScenario(s);
+      }
+      this.updateUI();
+    },
+
+    speakScenario(scene) {
+      if (!scene) return;
+      let text = 'Situation: ' + scene.title + '. ' + scene.story;
+      if (scene.dialogue && scene.dialogue.length) {
+        text += '. ' + scene.dialogue.map(d => d.speaker + ' says: ' + d.text).join('. ');
+      }
+      this.speak(text);
+    },
+
+    updateUI() {
+      const btn = document.getElementById('tb-narration');
+      if (btn) {
+        btn.className = 'topbar__nav-btn' + (this.enabled ? ' topbar__nav-btn--active' : '') + (this.speaking ? ' topbar__nav-btn--speaking' : '');
+        btn.innerHTML = '<span aria-hidden="true">' + (this.enabled ? (this.speaking ? '🗣️' : '🔊') : '🔇') + '</span>' +
+          '<span class="topbar__nav-label">' + (this.enabled ? (this.speaking ? 'Speaking...' : 'Voice ON') : 'Voice OFF') + '</span>' +
+          (this.speaking ? '<span class="narration-waves"><span></span><span></span><span></span></span>' : '');
+      }
+    }
+  };
+  narration.init();
+
+  // ================================================================
+  // 3D CYBER CHARACTER RENDERER (THREE.JS)
+  // ================================================================
+  const cyber3D = {
+    instances: {},
+
+    renderCharacter(containerId, missionType) {
+      if (typeof THREE === 'undefined') return;
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      if (this.instances[containerId]) {
+        try { this.instances[containerId](); } catch(e) {}
+        delete this.instances[containerId];
+      }
+
+      container.innerHTML = '';
+      const width = container.clientWidth || 380;
+      const height = container.clientHeight || 320;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 1.2, 4.2);
+
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const primaryHex = missionType === 'OT' ? 0xff4500 : 0x00d4ff;
+      const secondaryHex = missionType === 'OT' ? 0xff8c00 : 0x3b82f6;
+
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambLight);
+
+      const dirLight = new THREE.DirectionalLight(primaryHex, 1.4);
+      dirLight.position.set(5, 10, 7);
+      scene.add(dirLight);
+
+      const backLight = new THREE.PointLight(secondaryHex, 2.5, 10);
+      backLight.position.set(-5, 2, -3);
+      scene.add(backLight);
+
+      const charGroup = new THREE.Group();
+      scene.add(charGroup);
+
+      // Cyber Helmet
+      const headGeo = new THREE.SphereGeometry(0.55, 32, 32);
+      const headMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.2, metalness: 0.9 });
+      const head = new THREE.Mesh(headGeo, headMat);
+      head.position.y = 1.25;
+      charGroup.add(head);
+
+      // Glowing Visor
+      const visorGeo = new THREE.CylinderGeometry(0.56, 0.56, 0.22, 32, 1, false, -Math.PI * 0.4, Math.PI * 0.8);
+      const visorMat = new THREE.MeshBasicMaterial({ color: primaryHex, side: THREE.DoubleSide });
+      const visor = new THREE.Mesh(visorGeo, visorMat);
+      visor.position.set(0, 1.3, 0.02);
+      charGroup.add(visor);
+
+      // Torso & Chest Armor
+      const torsoGeo = new THREE.CylinderGeometry(0.65, 0.45, 1.1, 8);
+      const torsoMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.8 });
+      const torso = new THREE.Mesh(torsoGeo, torsoMat);
+      torso.position.y = 0.3;
+      charGroup.add(torso);
+
+      // Spinning Tech Core
+      const coreGeo = new THREE.IcosahedronGeometry(0.2, 1);
+      const coreMat = new THREE.MeshBasicMaterial({ color: primaryHex, wireframe: true });
+      const core = new THREE.Mesh(coreGeo, coreMat);
+      core.position.set(0, 0.45, 0.5);
+      charGroup.add(core);
+
+      // Shoulder Armor Pads
+      [-0.8, 0.8].forEach(x => {
+        const shoulderGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const shoulderMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 });
+        const shoulder = new THREE.Mesh(shoulderGeo, shoulderMat);
+        shoulder.position.set(x, 0.68, 0);
+        shoulder.scale.set(1.2, 0.8, 1);
+        charGroup.add(shoulder);
+      });
+
+      // Rotating Tech Rings
+      const ringGeo = new THREE.TorusGeometry(1.5, 0.02, 16, 100);
+      const ringMat = new THREE.MeshBasicMaterial({ color: secondaryHex, transparent: true, opacity: 0.6 });
+      const ring1 = new THREE.Mesh(ringGeo, ringMat);
+      ring1.rotation.x = Math.PI / 3;
+      charGroup.add(ring1);
+
+      const ring2 = new THREE.Mesh(ringGeo, ringMat);
+      ring2.rotation.y = Math.PI / 4;
+      charGroup.add(ring2);
+
+      // Particle Cloud
+      const partCount = 100;
+      const partGeo = new THREE.BufferGeometry();
+      const partPos = new Float32Array(partCount * 3);
+      for (let i = 0; i < partCount * 3; i += 3) {
+        partPos[i] = (Math.random() - 0.5) * 8;
+        partPos[i + 1] = (Math.random() - 0.5) * 6;
+        partPos[i + 2] = (Math.random() - 0.5) * 6;
+      }
+      partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+      const partMat = new THREE.PointsMaterial({ size: 0.04, color: primaryHex, transparent: true, opacity: 0.7 });
+      const particles = new THREE.Points(partGeo, partMat);
+      scene.add(particles);
+
+      let animId;
+      const clock = new THREE.Clock();
+      const animate = () => {
+        animId = requestAnimationFrame(animate);
+        const elapsed = clock.getElapsedTime();
+        charGroup.position.y = Math.sin(elapsed * 1.5) * 0.06;
+        charGroup.rotation.y = Math.sin(elapsed * 0.5) * 0.25;
+        core.rotation.x = elapsed * 1.2;
+        core.rotation.y = elapsed * 1.5;
+        ring1.rotation.z = elapsed * 0.4;
+        ring2.rotation.z = -elapsed * 0.3;
+        particles.rotation.y = elapsed * 0.05;
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      this.instances[containerId] = () => {
+        cancelAnimationFrame(animId);
+        renderer.dispose();
+      };
+    }
+  };
+
+  // ================================================================
   // SCREEN RENDERERS
   // ================================================================
   const app = document.getElementById('app');
   let pendingResult = null;
   let seqSelections = [];
+
 
   function addBg() {
     if (!document.querySelector('.bg-grid')) {
@@ -1165,6 +1688,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     '</table>';
   }
 
+
   function renderAdminQuestionConfigHtml() {
     const summary = adminDataCache.summary || { IT: {}, OT: {} };
     const cfg = adminDataCache.config || {};
@@ -1196,9 +1720,9 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
         return '<div class="config-row">' +
           '<div><strong>' + esc(catName) + '</strong><div style="font-size:11px;color:var(--text-muted)">Available: ' + availableCount + ' Qs</div></div>' +
           '<div class="config-counter">' +
-            '<button class="config-btn-counter btn-cat-dec" data-mission="' + mission + '" data-cat="' + catKey + '">-</button>' +
+            '<button type="button" class="config-btn-counter btn-cat-dec" data-mission="' + mission + '" data-cat="' + catKey + '">-</button>' +
             '<input type="number" class="config-input-number inp-cat-val" data-mission="' + mission + '" data-cat="' + catKey + '" min="0" max="' + availableCount + '" value="' + currentConfigured + '" />' +
-            '<button class="config-btn-counter btn-cat-inc" data-mission="' + mission + '" data-cat="' + catKey + '">+</button>' +
+            '<button type="button" class="config-btn-counter btn-cat-inc" data-mission="' + mission + '" data-cat="' + catKey + '">+</button>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -1206,7 +1730,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       const isValid = !invalidMsg && catSum === targetCount;
       const valBoxClass = isValid ? 'admin-validation-box--valid' : 'admin-validation-box--invalid';
 
-      return '<div class="config-box">' +
+      return '<div class="config-box" data-mission="' + mission + '">' +
         '<div class="config-box__header">' +
           '<h3 style="color:var(--text-primary)">' + (mission === 'IT' ? '🖥️ Mission 1: IT Security' : '🏭 Mission 2: OT Security') + '</h3>' +
           '<div>Target Qs per Game: <input type="number" class="config-input-number inp-game-target" data-mission="' + mission + '" min="1" max="25" value="' + targetCount + '" /></div>' +
@@ -1223,8 +1747,43 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
 
     return '<div class="config-grid">' + itConfigHtml + otConfigHtml + '</div>' +
       '<div style="margin-top:var(--space-lg);text-align:right">' +
-        '<button class="btn btn--primary btn--lg" id="btn-save-q-config">💾 Save Question Configuration</button>' +
+        '<button type="button" class="btn btn--primary btn--lg" id="btn-save-q-config">💾 Save Question Configuration</button>' +
       '</div>';
+  }
+
+  function updateAdminConfigValidationUI() {
+    ['IT', 'OT'].forEach(mission => {
+      const summary = adminDataCache.summary || { IT: {}, OT: {} };
+      const cfg = adminDataCache.config || {};
+      const targetCount = parseInt(mission === 'IT' ? (cfg.it_questions_per_game || 10) : (cfg.ot_questions_per_game || 10));
+      const avail = summary[mission] || {};
+      const catState = adminCatConfigState[mission] || {};
+
+      let catSum = 0;
+      let invalidMsg = '';
+
+      Object.keys(TOPICS).forEach(catKey => {
+        const isItTopic = ['messages', 'accounts', 'ai', 'impersonation', 'reporting', 'devices', 'office'].includes(catKey);
+        const isOtTopic = ['vendor', 'usb', 'boundary', 'safety', 'incident', 'site', 'gadgets'].includes(catKey);
+        if ((mission === 'IT' && !isItTopic) || (mission === 'OT' && !isOtTopic)) return;
+
+        const count = parseInt(catState[catKey] || 0);
+        const availCount = avail[catKey] || 0;
+        catSum += count;
+
+        if (count > availCount) {
+          const catName = TOPICS[catKey] ? TOPICS[catKey].label : catKey;
+          invalidMsg = "Category '" + catName + "' configured with " + count + " Qs, but only " + availCount + " available!";
+        }
+      });
+
+      const isValid = !invalidMsg && catSum === targetCount;
+      const box = document.querySelector('.config-box[data-mission="' + mission + '"] .admin-validation-box');
+      if (box) {
+        box.className = 'admin-validation-box ' + (isValid ? 'admin-validation-box--valid' : 'admin-validation-box--invalid');
+        box.innerHTML = '<div>' + (isValid ? '✅ Valid configuration: Sum of categories (' + catSum + ') matches game target (' + targetCount + ').' : ('❌ ' + (invalidMsg || ('Category sum (' + catSum + ') must equal game target (' + targetCount + ').')))) + '</div>';
+      }
+    });
   }
 
   function renderAdminAnalyticsHtml() {
@@ -1270,54 +1829,80 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     '</table>';
   }
 
+
   function initAdminDashboardEvents() {
     document.querySelectorAll('[data-admintab]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.onclick = (e) => {
         adminActiveTab = e.currentTarget.dataset.admintab;
         nav('admin');
-      });
+      };
     });
 
     const btnRef = document.getElementById('btn-admin-refresh');
-    if (btnRef) btnRef.addEventListener('click', () => nav('admin'));
+    if (btnRef) btnRef.onclick = () => nav('admin');
 
     const btnPlay = document.getElementById('btn-admin-to-player');
-    if (btnPlay) btnPlay.addEventListener('click', () => nav('landing'));
+    if (btnPlay) btnPlay.onclick = () => nav('landing');
 
     const inpSearch = document.getElementById('admin-user-search');
     if (inpSearch) {
-      inpSearch.addEventListener('input', (e) => {
+      inpSearch.oninput = (e) => {
         adminUserSearch = e.target.value;
         const w = document.querySelector('.admin-table-wrapper');
         if (w) w.innerHTML = renderAdminUserTableHtml();
         attachUserDetailEvents();
-      });
+      };
     }
 
     const selFilter = document.getElementById('admin-user-filter');
     if (selFilter) {
-      selFilter.addEventListener('change', (e) => {
+      selFilter.onchange = (e) => {
         adminStatusFilter = e.target.value;
         const w = document.querySelector('.admin-table-wrapper');
         if (w) w.innerHTML = renderAdminUserTableHtml();
         attachUserDetailEvents();
-      });
+      };
     }
 
     const btnExp1 = document.getElementById('btn-export-csv-users');
     const btnExp2 = document.getElementById('btn-export-csv-analytics');
     [btnExp1, btnExp2].forEach(btn => {
       if (btn) {
-        btn.addEventListener('click', () => {
-          window.location.href = '/api/admin/analytics/export';
-          showToast('📥 Exporting campaign CSV report...');
-        });
+        btn.onclick = async (e) => {
+          if (e) e.preventDefault();
+          try {
+            showToast('📥 Exporting campaign CSV report...');
+            const token = getBearerToken();
+            const res = await fetch('/api/admin/analytics/export', {
+              headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.status === 401 || res.status === 403) {
+              showToast('⚠️ Session expired or administrator access required.');
+              return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Cyber_Shift_Campaign_Report_' + new Date().toISOString().slice(0, 10) + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast('✅ Campaign CSV report downloaded successfully!');
+          } catch(err) {
+            console.error('[CSV EXPORT ERROR]', err);
+            showToast('❌ Failed to download CSV report.');
+          }
+        };
       }
     });
 
+
     const btnSaveAtt = document.getElementById('btn-save-global-attempts');
     if (btnSaveAtt) {
-      btnSaveAtt.addEventListener('click', async () => {
+      btnSaveAtt.onclick = async (e) => {
+        e.preventDefault();
         const val = parseInt(document.getElementById('inp-global-max-attempts').value);
         if (isNaN(val) || val < 1) {
           showToast('⚠️ Max attempts must be at least 1.');
@@ -1335,11 +1920,12 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
         } else {
           showToast('❌ ' + data.message);
         }
-      });
+      };
     }
 
     document.querySelectorAll('.btn-cat-dec, .btn-cat-inc').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.onclick = (e) => {
+        e.preventDefault();
         const m = e.currentTarget.dataset.mission;
         const cat = e.currentTarget.dataset.cat;
         const isInc = e.currentTarget.classList.contains('btn-cat-inc');
@@ -1349,24 +1935,41 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
         curr = isInc ? curr + 1 : Math.max(0, curr - 1);
         adminCatConfigState[m][cat] = curr;
         
-        nav('admin');
-      });
+        const inp = document.querySelector('.inp-cat-val[data-mission="' + m + '"][data-cat="' + cat + '"]');
+        if (inp) inp.value = curr;
+        updateAdminConfigValidationUI();
+      };
     });
 
     document.querySelectorAll('.inp-cat-val').forEach(inp => {
-      inp.addEventListener('change', (e) => {
+      inp.oninput = inp.onchange = (e) => {
         const m = e.currentTarget.dataset.mission;
         const cat = e.currentTarget.dataset.cat;
         const val = Math.max(0, parseInt(e.currentTarget.value) || 0);
         if (!adminCatConfigState[m]) adminCatConfigState[m] = {};
         adminCatConfigState[m][cat] = val;
-        nav('admin');
-      });
+        updateAdminConfigValidationUI();
+      };
+    });
+
+    document.querySelectorAll('.inp-game-target').forEach(inp => {
+      inp.oninput = inp.onchange = (e) => {
+        const m = e.currentTarget.dataset.mission;
+        const val = Math.max(1, parseInt(e.currentTarget.value) || 1);
+        if (!adminDataCache.config) adminDataCache.config = {};
+        if (m === 'IT') {
+          adminDataCache.config.it_questions_per_game = val;
+        } else {
+          adminDataCache.config.ot_questions_per_game = val;
+        }
+        updateAdminConfigValidationUI();
+      };
     });
 
     const btnSaveQ = document.getElementById('btn-save-q-config');
     if (btnSaveQ) {
-      btnSaveQ.addEventListener('click', async () => {
+      btnSaveQ.onclick = async (e) => {
+        e.preventDefault();
         const itT = parseInt(adminDataCache.config.it_questions_per_game || 10);
         const otT = parseInt(adminDataCache.config.ot_questions_per_game || 10);
 
@@ -1382,15 +1985,35 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
         const data = await res.json();
         if (data.status === 'success') {
           showToast('✅ Question configuration validated and saved persistently!');
+          adminDataCache.config = data.config || adminDataCache.config;
           nav('admin');
         } else {
           showToast('❌ ' + data.message);
         }
-      });
+      };
     }
 
     attachUserDetailEvents();
   }
+
+  function refreshAdminConfigSection() {
+    const configGrid = document.querySelector('.admin-section--active .config-grid');
+    if (!configGrid) return;
+
+    const newHtml = renderAdminQuestionConfigHtml();
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = newHtml;
+
+    const newGrid = tempDiv.querySelector('.config-grid');
+    if (newGrid) configGrid.replaceWith(newGrid);
+
+    const saveContainer = document.querySelector('.admin-section--active [style*="text-align:right"]');
+    const newSaveContainer = tempDiv.querySelector('[style*="text-align:right"]');
+    if (saveContainer && newSaveContainer) saveContainer.replaceWith(newSaveContainer);
+
+    initAdminDashboardEvents();
+  }
+
 
   function attachUserDetailEvents() {
     document.querySelectorAll('.btn-user-detail').forEach(btn => {
@@ -1482,7 +2105,10 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     renderTopbar();
 
     switch(screen) {
-      case 'landing': app.innerHTML = screenLanding(); break;
+      case 'landing':
+        app.innerHTML = screenLanding();
+        setTimeout(() => cyber3D.renderCharacter('hero-3d-canvas', 'IT'), 60);
+        break;
       case 'howtoplay': app.innerHTML = screenHowToPlay(); break;
       case 'setup': app.innerHTML = screenSetup(); break;
       case 'missionselect': app.innerHTML = screenMissionSelect(); break;
@@ -1505,8 +2131,11 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
   function screenLanding() {
     const run = activeRun();
     const resumeBtn = run ? '<button class="btn btn--primary btn--lg" id="tb-resume-' + run.mission + '">⏳ RESUME ' + run.mission + ' MISSION (' + runProgress(run).done + '/' + runProgress(run).total + ')</button>' : '';
-    return '<div class="landing scene-enter"><div class="landing__logo">' + ShieldLogo + '</div><h1 class="landing__title">CYBER SHIFT</h1><p class="landing__tagline">Your workday looks normal.<br/>Then <strong>one message</strong> changes the situation.<br/><br/>Make the right calls.<br/>Protect the business. Protect the plant.</p><div class="landing__cta-group">' + resumeBtn + '<button class="btn ' + (run ? 'btn--secondary' : 'btn--primary btn--lg') + '" id="btn-start">▶ ENTER MISSION SELECT</button><button class="btn btn--secondary" id="btn-howto">How to Play</button><button class="btn btn--ghost" id="btn-lb">🏆 Leaderboard</button></div><div class="landing__version">v' + GAME_VERSION.gameVersion + ' · Build ' + GAME_VERSION.buildVersion + '</div><div class="privacy-notice">🔒 Single-Play Policy Active: 1 attempt allowed per user per mission. Authenticated via SMTP OTP.</div></div>';
+    return '<div class="landing scene-enter"><div class="landing__logo">' + ShieldLogo + '</div><h1 class="landing__title">CYBER SHIFT</h1><p class="landing__tagline">Your workday looks normal.<br/>Then <strong>one message</strong> changes the situation.<br/><br/>Make the right calls.<br/>Protect the business. Protect the plant.</p>' +
+      '<div class="hero-3d-container"><div id="hero-3d-canvas" class="cyber-3d-wrapper"></div></div>' +
+      '<div class="landing__cta-group">' + resumeBtn + '<button class="btn ' + (run ? 'btn--secondary' : 'btn--primary btn--lg') + '" id="btn-start">▶ ENTER MISSION SELECT</button><button class="btn btn--secondary" id="btn-howto">How to Play</button><button class="btn btn--ghost" id="btn-lb">🏆 Leaderboard</button></div><div class="landing__version">v' + GAME_VERSION.gameVersion + ' · Build ' + GAME_VERSION.buildVersion + '</div><div class="privacy-notice">🔒 Single-Play Policy Active: 1 attempt allowed per user per mission. Authenticated via SMTP OTP.</div></div>';
   }
+
 
   function screenHowToPlay() {
     const steps = [
@@ -1594,12 +2223,17 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     saveRun();
     app.innerHTML = '<main class="scene scene-enter" id="scene-main"><div class="scene__header"><div class="scene__location">' + esc(scene.location) + '</div><h1 class="scene__title">' + esc(scene.title) + '</h1><p class="scene__subtitle">' + esc(scene.subtitle || '') + '</p></div>' +
       '<div class="scene__layout"><section class="scene__story">' +
-      '<div class="env-panel"><div class="' + envClass + '">' + envDecor + '</div><div class="env-panel__scene' + (visual ? '' : ' env-panel__scene--art-only') + '"><figure class="scene-art">' + renderArt(scene.art) + '</figure>' + (visual ? '<div class="scene-visual">' + visual + '</div>' : '') + '</div></div>' +
+      '<div class="env-panel"><div class="' + envClass + '">' + envDecor + '</div><div id="scene-3d-canvas" class="cyber-3d-wrapper" style="height:200px;max-width:340px;margin:0 auto var(--space-md)"></div><div class="env-panel__scene' + (visual ? '' : ' env-panel__scene--art-only') + '"><figure class="scene-art">' + renderArt(scene.art) + '</figure>' + (visual ? '<div class="scene-visual">' + visual + '</div>' : '') + '</div></div>' +
       '<div class="dialogue-panel">' + story + '</div></section>' +
       '<section class="scene__actions" id="scene-actions">' + evidenceHtml + decisionHtml + '</section></div></main>';
     if (!answered) showSceneSplash(scene, position, state.sceneIds.length);
+    setTimeout(() => {
+      cyber3D.renderCharacter('scene-3d-canvas', scene.mission);
+      if (!answered) narration.speakScenario(scene);
+    }, 80);
     window.scrollTo({top:0,behavior:'smooth'});
   }
+
 
   function screenResult(data) {
     const { normalizedScore, rawScore, risk, criticalErrors, badges, decisions, mission, topics } = data;
@@ -1644,6 +2278,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
 
     // TOP BAR NAVIGATION
     if (id === 'tb-user') { toggleUserMenu(); return; }
+    if (id === 'tb-narration') { narration.toggle(); return; }
     if (id === 'tb-home' || id === 'tb-home-brand') { leaveMissionTo('landing'); return; }
     if (id === 'tb-missions') { leaveMissionTo('missionselect'); return; }
     if (id === 'tb-lb') { leaveMissionTo('leaderboard'); return; }
