@@ -228,7 +228,8 @@ def get_all_config():
         "max_attempts_per_user": max_attempts,
         "it_questions_per_game": it_q_per_game,
         "ot_questions_per_game": ot_q_per_game,
-        "category_config": cat_cfg
+        "category_config": cat_cfg,
+        "mascot_file": cfg.get("mascot_file", "")
     }
 
 def save_game_config_item(admin_email: str, key: str, value: str):

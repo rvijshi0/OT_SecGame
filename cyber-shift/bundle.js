@@ -755,6 +755,8 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
   let authInfoMsg = '';
   let authInfoTone = 'info';
   let allowedDomains = [];
+  // Cybersecurity mascot image set from the admin dashboard ('' = built-in 3D character)
+  let mascotUrl = '';
   let pendingConfirm = null;
 
   function getBearerToken() {
@@ -914,7 +916,17 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       hint.hidden = false;
     }
     if (input && allowedDomains.length) input.placeholder = 'you@' + allowedDomains[0];
+    setMascotUrl(cfg.mascotUrl || '');
   }).catch(() => {});
+
+  // Swap the mascot everywhere it is currently on screen
+  function setMascotUrl(url) {
+    if (url === mascotUrl) return;
+    mascotUrl = url;
+    const state = engine.state;
+    if (document.getElementById('hero-3d-canvas')) cyber3D.renderCharacter('hero-3d-canvas', 'IT');
+    if (document.getElementById('scene-3d-canvas')) cyber3D.renderCharacter('scene-3d-canvas', state ? state.mission : 'IT');
+  }
 
   function emailDomainAllowed(email) {
     return !allowedDomains.length || allowedDomains.includes(email.split('@').pop().toLowerCase());
@@ -1145,6 +1157,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
   }
 
   function renderAuthModal() {
+    narration.stop();
     let existing = document.getElementById('auth-modal-overlay');
     if (existing) existing.remove();
 
@@ -1272,6 +1285,8 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     }
   };
   narration.init();
+  // Speech synthesis can outlive the page in some browsers (reload, closing the tab, leaving the site)
+  window.addEventListener('pagehide', () => narration.stop());
 
   // ================================================================
   // 3D CYBER CHARACTER RENDERER (THREE.JS)
@@ -1280,7 +1295,6 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     instances: {},
 
     renderCharacter(containerId, missionType) {
-      if (typeof THREE === 'undefined') return;
       const container = document.getElementById(containerId);
       if (!container) return;
 
@@ -1290,6 +1304,16 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       }
 
       container.innerHTML = '';
+      // Admin-uploaded Cybersecurity mascot replaces the built-in 3D character
+      if (mascotUrl) {
+        container.innerHTML = '<div class="mascot-figure mascot-figure--' + (missionType === 'OT' ? 'ot' : 'it') + '">' +
+          '<div class="mascot-figure__glow"></div>' +
+          '<img class="mascot-figure__img" src="' + esc(mascotUrl) + '" alt="CYBER SHIFT Cybersecurity mascot" draggable="false" />' +
+          '<div class="mascot-figure__shadow"></div></div>';
+        return;
+      }
+
+      if (typeof THREE === 'undefined') return;
       const width = container.clientWidth || 380;
       const height = container.clientHeight || 320;
 
@@ -1300,7 +1324,19 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      // CSS sizes the canvas to its box; the observer keeps the drawing buffer and aspect in step
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
+      renderer.domElement.style.display = 'block';
       container.appendChild(renderer.domElement);
+      const resizeObs = window.ResizeObserver ? new ResizeObserver(() => {
+        const w = container.clientWidth, h = container.clientHeight;
+        if (!w || !h) return;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }) : null;
+      if (resizeObs) resizeObs.observe(container);
 
       const primaryHex = missionType === 'OT' ? 0xff4500 : 0x00d4ff;
       const secondaryHex = missionType === 'OT' ? 0xff8c00 : 0x3b82f6;
@@ -1385,6 +1421,12 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       let animId;
       const clock = new THREE.Clock();
       const animate = () => {
+        // Container left the page (screen change): release the GPU context instead of animating offscreen
+        if (!container.isConnected) {
+          if (this.instances[containerId] === cleanup) delete this.instances[containerId];
+          cleanup();
+          return;
+        }
         animId = requestAnimationFrame(animate);
         const elapsed = clock.getElapsedTime();
         charGroup.position.y = Math.sin(elapsed * 1.5) * 0.06;
@@ -1396,12 +1438,13 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
         particles.rotation.y = elapsed * 0.05;
         renderer.render(scene, camera);
       };
-      animate();
-
-      this.instances[containerId] = () => {
+      const cleanup = () => {
         cancelAnimationFrame(animId);
+        if (resizeObs) resizeObs.disconnect();
         renderer.dispose();
       };
+      this.instances[containerId] = cleanup;
+      animate();
     }
   };
 
@@ -1463,6 +1506,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       if (cData.status === 'success') {
     adminDataCache.adminEmails = cData.adminEmails || ['admin@company.com'];
         adminDataCache.config = cData.config || {};
+        adminDataCache.mascotUrl = cData.mascotUrl || '';
         adminDataCache.summary = cData.availableQuestionsSummary || {};
         adminCatConfigState = JSON.parse(JSON.stringify(cData.config.category_config || {}));
       }
@@ -1623,8 +1667,30 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
             '<div><strong>Session Lifetime:</strong> <code>24 Hours</code></div>' +
           '</div>' +
         '</div>' +
+        renderAdminMascotHtml() +
       '</div>' +
 
+    '</div>';
+  }
+
+  function renderAdminMascotHtml() {
+    const url = adminDataCache.mascotUrl || '';
+    return '<div class="admin-card">' +
+      '<div class="admin-card__title"><span>🦸 Cybersecurity Mascot</span>' +
+        '<span class="status-pill ' + (url ? 'status-pill--completed' : '') + '">' + (url ? 'CUSTOM IMAGE' : 'DEFAULT 3D CHARACTER') + '</span></div>' +
+      '<div class="mascot-admin">' +
+        '<div class="mascot-admin__preview" id="mascot-admin-preview">' +
+          (url ? '<img src="' + esc(url) + '" alt="Current Cybersecurity mascot" />' : '<span>No image uploaded.<br/>The built-in 3D character is shown.</span>') +
+        '</div>' +
+        '<div class="mascot-admin__body">' +
+          '<p>Shown on the landing page hero and beside every mission scene. Use a PNG or WEBP with a transparent background for the best look (max 5 MB; PNG, JPG, GIF or WEBP).</p>' +
+          '<input type="file" id="inp-mascot-file" accept="image/png,image/jpeg,image/gif,image/webp" />' +
+          '<div class="mascot-admin__actions">' +
+            '<button class="btn btn--primary" id="btn-mascot-upload" disabled>⬆ Upload mascot</button>' +
+            (url ? '<button class="btn btn--ghost" id="btn-mascot-reset">↺ Revert to default</button>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
     '</div>';
   }
 
@@ -1831,6 +1897,14 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
 
 
   function initAdminDashboardEvents() {
+    // The tab strip scrolls sideways on small screens; keep the selected tab visible after re-render
+    const activeTab = document.querySelector('.admin-tab--active');
+    const tabStrip = activeTab && activeTab.parentElement;
+    if (tabStrip && tabStrip.scrollWidth > tabStrip.clientWidth) {
+      const a = activeTab.getBoundingClientRect(), t = tabStrip.getBoundingClientRect();
+      tabStrip.scrollLeft += (a.left + a.width / 2) - (t.left + t.width / 2);
+    }
+
     document.querySelectorAll('[data-admintab]').forEach(btn => {
       btn.onclick = (e) => {
         adminActiveTab = e.currentTarget.dataset.admintab;
@@ -1993,6 +2067,74 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       };
     }
 
+    const inpMascot = document.getElementById('inp-mascot-file');
+    const btnMascotUp = document.getElementById('btn-mascot-upload');
+    if (inpMascot && btnMascotUp) {
+      inpMascot.onchange = () => {
+        const file = inpMascot.files[0];
+        btnMascotUp.disabled = !file;
+        const preview = document.getElementById('mascot-admin-preview');
+        if (file && preview) {
+          const img = document.createElement('img');
+          img.alt = 'New mascot preview';
+          img.src = URL.createObjectURL(file);
+          preview.replaceChildren(img);
+        }
+      };
+      btnMascotUp.onclick = async (e) => {
+        e.preventDefault();
+        const file = inpMascot.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('⚠️ Image is too large. Maximum size is 5 MB.');
+          return;
+        }
+        btnMascotUp.disabled = true;
+        const form = new FormData();
+        form.append('image', file);
+        try {
+          const res = await fetch('/api/admin/mascot', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + getBearerToken() },
+            body: form
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+            setMascotUrl(data.mascotUrl || '');
+            showToast('✅ Cybersecurity mascot updated across the game.');
+            nav('admin');
+          } else {
+            showToast('❌ ' + data.message);
+            btnMascotUp.disabled = false;
+          }
+        } catch (err) {
+          console.error('[MASCOT UPLOAD ERROR]', err);
+          showToast('❌ Failed to upload mascot image.');
+          btnMascotUp.disabled = false;
+        }
+      };
+    }
+
+    const btnMascotReset = document.getElementById('btn-mascot-reset');
+    if (btnMascotReset) {
+      btnMascotReset.onclick = async (e) => {
+        e.preventDefault();
+        if (!confirm('Remove the uploaded mascot and show the default 3D character?')) return;
+        const res = await fetch('/api/admin/mascot', {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + getBearerToken() }
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          setMascotUrl('');
+          showToast('✅ Mascot reverted to the default character.');
+          nav('admin');
+        } else {
+          showToast('❌ ' + data.message);
+        }
+      };
+    }
+
     attachUserDetailEvents();
   }
 
@@ -2090,6 +2232,8 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
   }
 
   async function nav(screen, data) {
+    // Scenario narration belongs to the scene being left; a new scene starts its own
+    narration.stop();
     addBg();
     
     // Check auth on landing or mission select
@@ -2229,7 +2373,8 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     if (!answered) showSceneSplash(scene, position, state.sceneIds.length);
     setTimeout(() => {
       cyber3D.renderCharacter('scene-3d-canvas', scene.mission);
-      if (!answered) narration.speakScenario(scene);
+      // Skip if the player already navigated away during the delay
+      if (!answered && currentScreen === 'scene' && document.getElementById('scene-main')) narration.speakScenario(scene);
     }, 80);
     window.scrollTo({top:0,behavior:'smooth'});
   }

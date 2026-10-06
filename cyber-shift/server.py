@@ -24,6 +24,30 @@ app = Flask(__name__, static_folder=".", static_url_path="")
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
+# Cybersecurity mascot image uploaded from the admin dashboard
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+MASCOT_MAX_BYTES = 5 * 1024 * 1024
+# Raster formats only (SVG can carry script). Detected from file signature, not the client's filename.
+MASCOT_SIGNATURES = (
+    (b"\x89PNG\r\n\x1a\n", "png"),
+    (b"\xff\xd8\xff", "jpg"),
+    (b"GIF87a", "gif"),
+    (b"GIF89a", "gif"),
+)
+
+def detect_image_ext(data: bytes):
+    for sig, ext in MASCOT_SIGNATURES:
+        if data.startswith(sig):
+            return ext
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+def mascot_url(cfg: dict) -> str:
+    """Public URL for the current mascot (versioned by filename so browsers refetch after an upload)."""
+    name = cfg.get("mascot_file") or ""
+    return f"/api/mascot?v={name}" if name else ""
+
 def get_bearer_token() -> str:
     auth_header = request.headers.get("Authorization", "")
     if auth_header:
@@ -106,8 +130,20 @@ def get_public_config():
         "maxAttemptsPerUser": cfg["max_attempts_per_user"],
         "itQuestionsPerGame": cfg["it_questions_per_game"],
         "otQuestionsPerGame": cfg["ot_questions_per_game"],
-        "categoryConfig": cfg["category_config"]
+        "categoryConfig": cfg["category_config"],
+        "mascotUrl": mascot_url(cfg)
     })
+
+@app.route("/api/mascot", methods=["GET"])
+def get_mascot_image():
+    """Serves the uploaded Cybersecurity mascot image (404 when none is configured)."""
+    name = get_all_config()["mascot_file"]
+    if not name or not os.path.isfile(os.path.join(UPLOAD_DIR, name)):
+        return jsonify({"status": "error", "message": "No mascot image configured."}), 404
+    resp = send_from_directory(UPLOAD_DIR, name)
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return resp
 
 @app.route("/api/auth/request-otp", methods=["POST"])
 def request_otp():
@@ -306,8 +342,60 @@ def get_admin_config():
         "status": "success",
         "adminEmails": ADMIN_EMAILS,
         "config": cfg,
+        "mascotUrl": mascot_url(cfg),
         "availableQuestionsSummary": summary
     }), 200
+
+@app.route("/api/admin/mascot", methods=["POST"])
+def upload_mascot():
+    """Replaces the Cybersecurity mascot image (PNG, JPG, GIF or WEBP, max 5 MB)."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+
+    upload = request.files.get("image")
+    if not upload:
+        return jsonify({"status": "error", "message": "No image file was uploaded."}), 400
+    data = upload.read(MASCOT_MAX_BYTES + 1)
+    if len(data) > MASCOT_MAX_BYTES:
+        return jsonify({"status": "error", "message": "Image is too large. Maximum size is 5 MB."}), 400
+    ext = detect_image_ext(data)
+    if not ext:
+        return jsonify({"status": "error", "message": "Unsupported file. Upload a PNG, JPG, GIF or WEBP image."}), 400
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    name = f"mascot-{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+    with open(os.path.join(UPLOAD_DIR, name), "wb") as f:
+        f.write(data)
+
+    old = get_all_config()["mascot_file"]
+    save_game_config_item(admin_user["email"], "mascot_file", name)
+    if old and old != name:
+        try:
+            os.remove(os.path.join(UPLOAD_DIR, old))
+        except OSError:
+            pass
+
+    log_audit_action(admin_user["email"], "UPDATE_MASCOT", f"Uploaded Cybersecurity mascot image ({ext}, {len(data)} bytes)")
+    return jsonify({"status": "success", "message": "Mascot image updated.", "mascotUrl": mascot_url({"mascot_file": name})}), 200
+
+@app.route("/api/admin/mascot", methods=["DELETE"])
+def reset_mascot():
+    """Removes the uploaded mascot so the game falls back to the built-in 3D character."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+
+    old = get_all_config()["mascot_file"]
+    save_game_config_item(admin_user["email"], "mascot_file", "")
+    if old:
+        try:
+            os.remove(os.path.join(UPLOAD_DIR, old))
+        except OSError:
+            pass
+
+    log_audit_action(admin_user["email"], "RESET_MASCOT", "Removed Cybersecurity mascot image; reverted to default 3D character")
+    return jsonify({"status": "success", "message": "Mascot reset to the default character.", "mascotUrl": ""}), 200
 
 @app.route("/api/admin/config", methods=["POST"])
 def update_admin_config():

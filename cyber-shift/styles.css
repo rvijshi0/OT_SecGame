@@ -4847,19 +4847,36 @@ body.has-topbar .badge-notification { top: calc(var(--topbar-offset) + 8px); }
 /* ================================================================
    GAMEX — TOPBAR (the game's own in-scene navigation bar)
    ================================================================ */
+/* Full-bleed fixed bar: resets the floating-pill geometry declared earlier
+   (left:50% + translateX(-50%), capped width, rounded corners, drop animation) */
 .topbar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  transform: none;
+  border-radius: 0;
+  animation: topbarFade 400ms ease-out;
   z-index: 200;
   background: rgba(8, 12, 24, 0.95);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255,69,0,0.12);
   padding: 0 var(--space-xl);
-  height: 60px;
+  height: auto;
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
+}
+
+.topbar::before { display: none; }
+.topbar__center { flex: 1 1 auto; }
+
+@keyframes topbarFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .topbar::after {
@@ -4904,7 +4921,8 @@ body.has-topbar .badge-notification { top: calc(var(--topbar-offset) + 8px); }
   .mission-select__grid { grid-template-columns: 1fr; }
   .env-panel__scene { flex-direction: column; }
   .char-3d-scene { width: 100px; height: 130px; }
-  .topbar { padding: 0 var(--space-md); }
+  .topbar { flex-wrap: wrap; padding: 8px var(--space-md); row-gap: 8px; }
+  .topbar__center { order: 3; flex-basis: 100%; }
   .hud { padding: var(--space-sm) var(--space-md); }
   .narration-bar { max-width: 90vw; bottom: var(--space-md); }
 }
@@ -5020,3 +5038,191 @@ body.has-topbar .badge-notification { top: calc(var(--topbar-offset) + 8px); }
   transform: scale(0.92);
 }
 
+
+/* ----------------------------------------------------------------
+   CYBERDHRUV MASCOT (admin-uploaded image replacing the 3D character)
+   ---------------------------------------------------------------- */
+.mascot-figure {
+  --mascot-glow: rgba(0, 212, 255, 0.35);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 18px;
+}
+.mascot-figure--ot { --mascot-glow: rgba(255, 140, 0, 0.35); }
+
+.mascot-figure__glow {
+  position: absolute;
+  left: 50%;
+  bottom: 10%;
+  width: 70%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--mascot-glow) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.mascot-figure__img {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px var(--mascot-glow)) drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
+  animation: mascotFloat 4s ease-in-out infinite;
+  user-select: none;
+}
+
+.mascot-figure__shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 45%;
+  height: 12px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.55) 0%, transparent 70%);
+  animation: mascotShadow 4s ease-in-out infinite;
+}
+
+@keyframes mascotFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes mascotShadow {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  50% { transform: translateX(-50%) scale(0.85); opacity: 0.7; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascot-figure__img, .mascot-figure__shadow { animation: none; }
+}
+
+/* Admin: mascot upload card */
+.mascot-admin {
+  display: flex;
+  gap: var(--space-lg);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.mascot-admin__preview {
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-sm);
+  border-radius: var(--border-radius-md);
+  border: 1px dashed rgba(148, 163, 184, 0.3);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+.mascot-admin__preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.mascot-admin__body {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+.mascot-admin__actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/* ================================================================
+   RESPONSIVE POLISH — phones (≤600), tablets (≤768), laptops (≤1279)
+   Placed last: earlier GAMEX blocks override several fluid rules.
+   ================================================================ */
+
+/* ---- Topbar ---- */
+.topbar .topbar__risk { width: 64px; }          /* .risk-meter (120px) otherwise wins */
+.topbar__stats { flex-shrink: 0; }
+.topbar__mission { min-width: 140px; }
+.topbar__chips { flex-wrap: nowrap; }
+.topbar__nav-btn { justify-content: center; white-space: nowrap; }
+
+/* Labels crowd out the progress area below wide desktops; icons keep their title tooltip */
+@media (max-width: 1279px) {
+  .topbar__nav-label { display: none; }
+  .topbar__nav-btn { padding: 6px 10px; min-width: 38px; }
+}
+
+@media (max-width: 768px) {
+  .topbar { column-gap: var(--space-sm); }
+  .topbar__nav { gap: 4px; margin-left: auto; }
+  .topbar__nav-btn { padding: 6px 8px; min-width: 36px; }
+  .topbar__user { margin-left: 2px; }
+  .topbar__avatar { width: 36px; height: 36px; }
+  .topbar__center { justify-content: space-between; gap: var(--space-md); min-width: 0; }
+  .topbar__mission { flex: 1 1 auto; min-width: 0; max-width: none; }
+  .topbar__stats { gap: var(--space-md); }
+  .topbar__chips { overflow-x: auto; scrollbar-width: none; }
+  .topbar__chips::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 480px) {
+  .topbar__brand-text { display: none; }
+  .topbar__ring { display: none; }
+  .topbar__step { font-size: 10px; }
+  .topbar__stat-value { font-size: var(--font-size-base); }
+  .topbar .topbar__risk { width: 48px; }
+}
+
+/* ---- Landing hero / 3D character ---- */
+.hero-3d-container { width: 100%; }
+.hero-3d-container .cyber-3d-wrapper { height: clamp(220px, 62vw, 360px); }
+
+/* ---- Mission scene: art + mock visual wrap instead of squeezing ---- */
+.env-panel__scene { flex-wrap: wrap; justify-content: center; }
+.scene-visual { flex: 1 1 280px; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+
+@media (max-width: 600px) {
+  #scene-3d-canvas.cyber-3d-wrapper { height: 160px !important; }
+}
+
+/* ---- Admin dashboard ---- */
+.admin-card__title { flex-wrap: wrap; gap: var(--space-sm); }
+.status-pill, .admin-badge { white-space: nowrap; }
+.admin-search-input { max-width: 100%; }
+
+@media (max-width: 768px) {
+  .admin-table td { white-space: nowrap; }        /* scroll the table instead of crushing columns */
+  .admin-table .btn { white-space: nowrap; padding: 6px 12px; }
+  .admin-table th, .admin-table td { padding: 10px 12px; }
+  .admin-tabs { scrollbar-width: thin; scroll-snap-type: x proximity; }
+  .admin-tab { flex-shrink: 0; scroll-snap-align: start; }
+}
+
+@media (max-width: 600px) {
+  .admin-header { padding: var(--space-md); }
+  .admin-header__title { font-size: var(--font-size-xl); }
+  .admin-header__actions { width: 100%; }
+  .admin-header__actions .btn { flex: 1 1 100%; justify-content: center; }
+  .admin-header__actions .admin-badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .admin-card { padding: var(--space-md); }
+  .admin-table-controls { flex-direction: column; align-items: stretch; }
+  .admin-table-controls > * { width: 100%; }
+  .admin-table-controls > div { flex-direction: column; }
+  .admin-table-controls .admin-search-input,
+  .admin-table-controls .admin-select,
+  .admin-table-controls .btn { width: 100%; }
+  .admin-kpi-grid { grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+  .admin-modal-overlay { padding: var(--space-sm); align-items: flex-end; }
+  .admin-modal-content { padding: var(--space-md); max-height: 92vh; }
+  .mascot-admin__preview { width: 100%; height: 200px; }
+}
+
+@media (max-width: 380px) {
+  .admin-kpi-grid { grid-template-columns: 1fr; }
+}
