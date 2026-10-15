@@ -50,7 +50,7 @@ def send_otp_email(to_email: str, otp_code: str) -> tuple[bool, str]:
         </ul>
         
         <div class="footer">
-          CYBER SHIFT Enterprise Awareness Campaign &bull; Protected System &bull; Hardcoded SMTP: {SMTP_HOST}:{SMTP_PORT}
+          CYBER SHIFT Enterprise Awareness Campaign &bull; Protected System &bull;
         </div>
       </div>
     </body>
