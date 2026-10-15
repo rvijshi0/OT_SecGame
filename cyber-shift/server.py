@@ -6,6 +6,7 @@ attempt limits enforcement, and Enterprise Admin Dashboard REST APIs.
 
 from flask import Flask, request, jsonify, send_from_directory, Response
 import os
+from werkzeug.middleware.proxy_fix import ProxyFix
 import json
 import re
 import csv
@@ -21,6 +22,10 @@ from database import (init_db, create_otp, verify_otp, get_user_by_session, get_
                       get_effective_max_attempts, get_user_attempt_counts)
 
 app = Flask(__name__, static_folder=".", static_url_path="")
+app.wsgi_app = ProxyFix(
+    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+)
+
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -46,7 +51,7 @@ def detect_image_ext(data: bytes):
 def mascot_url(cfg: dict) -> str:
     """Public URL for the current mascot (versioned by filename so browsers refetch after an upload)."""
     name = cfg.get("mascot_file") or ""
-    return f"/api/mascot?v={name}" if name else ""
+    return f"api/mascot?v={name}" if name else ""
 
 def get_bearer_token() -> str:
     auth_header = request.headers.get("Authorization", "")

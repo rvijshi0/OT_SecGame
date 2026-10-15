@@ -851,12 +851,12 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     const token = authToken;
     endSession('signed_out');
     // Revoke the token server-side; best effort so sign-out works offline too
-    fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(() => {});
+    fetch('api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(() => {});
   }
 
   async function checkUserSession() {
     if (!authToken) return false;
-    const res = await apiRequest('/api/user/status');
+    const res = await apiRequest('api/user/status');
     if (res.ok && res.data.user) {
       setSession(authToken, res.data.user, res.data.expiresAt);
       return true;
@@ -866,7 +866,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
 
   async function submitMissionCompletionApi(missionId, score, grade, decisions) {
     if (!authToken || !currentUser) return;
-    const res = await apiRequest('/api/mission/complete', {
+    const res = await apiRequest('api/mission/complete', {
       method: 'POST',
       body: JSON.stringify({ missionId: missionId.toLowerCase(), score, grade, decisions })
     });
@@ -906,7 +906,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
   }, HEARTBEAT_MS);
 
   // Public config: allowed email domains for the sign-in hint and client-side pre-check
-  fetch('/api/config').then(r => r.json()).then(cfg => {
+  fetch('api/config').then(r => r.json()).then(cfg => {
     allowedDomains = cfg.allowedDomains || [];
     // Login modal may already be open: update its hint in place so typed input is kept
     const hint = document.getElementById('auth-domain-hint');
@@ -1480,11 +1480,11 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       const headers = { 'Authorization': 'Bearer ' + token };
       
       const [uRes, cRes, qRes, aRes, lRes] = await Promise.all([
-        fetch('/api/admin/users', { headers }),
-        fetch('/api/admin/config', { headers }),
-        fetch('/api/admin/questions', { headers }),
-        fetch('/api/admin/analytics', { headers }),
-        fetch('/api/admin/audit-logs', { headers })
+        fetch('api/admin/users', { headers }),
+        fetch('api/admin/config', { headers }),
+        fetch('api/admin/questions', { headers }),
+        fetch('api/admin/analytics', { headers }),
+        fetch('api/admin/audit-logs', { headers })
       ]);
       
       if (uRes.status === 403 || cRes.status === 403) {
@@ -1947,7 +1947,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
           try {
             showToast('📥 Exporting campaign CSV report...');
             const token = getBearerToken();
-            const res = await fetch('/api/admin/analytics/export', {
+            const res = await fetch('api/admin/analytics/export', {
               headers: { 'Authorization': 'Bearer ' + token }
             });
             if (res.status === 401 || res.status === 403) {
@@ -1982,7 +1982,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
           showToast('⚠️ Max attempts must be at least 1.');
           return;
         }
-        const res = await fetch('/api/admin/config', {
+        const res = await fetch('api/admin/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getBearerToken() },
           body: JSON.stringify({ max_attempts_per_user: val })
@@ -2047,7 +2047,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
         const itT = parseInt(adminDataCache.config.it_questions_per_game || 10);
         const otT = parseInt(adminDataCache.config.ot_questions_per_game || 10);
 
-        const res = await fetch('/api/admin/config', {
+        const res = await fetch('api/admin/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getBearerToken() },
           body: JSON.stringify({
@@ -2093,7 +2093,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
         const form = new FormData();
         form.append('image', file);
         try {
-          const res = await fetch('/api/admin/mascot', {
+          const res = await fetch('api/admin/mascot', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + getBearerToken() },
             body: form
@@ -2120,7 +2120,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       btnMascotReset.onclick = async (e) => {
         e.preventDefault();
         if (!confirm('Remove the uploaded mascot and show the default 3D character?')) return;
-        const res = await fetch('/api/admin/mascot', {
+        const res = await fetch('api/admin/mascot', {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + getBearerToken() }
         });
@@ -2168,7 +2168,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
 
   async function showUserDetailModal(targetEmail) {
     try {
-      const res = await fetch('/api/admin/user/' + encodeURIComponent(targetEmail), {
+      const res = await fetch('api/admin/user/' + encodeURIComponent(targetEmail), {
         headers: { 'Authorization': 'Bearer ' + getBearerToken() }
       });
       const data = await res.json();
@@ -2211,7 +2211,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
 
       modal.querySelector('#btn-close-user-modal').addEventListener('click', () => modal.remove());
       modal.querySelector('#btn-reset-user-att').addEventListener('click', async () => {
-        const rRes = await fetch('/api/admin/user/reset-attempts', {
+        const rRes = await fetch('api/admin/user/reset-attempts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getBearerToken() },
           body: JSON.stringify({ email: targetEmail })
@@ -2452,7 +2452,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       const btn = document.getElementById('btn-request-otp');
       if (btn) { btn.disabled = true; btn.textContent = 'Sending OTP via SMTP...'; }
       
-      const res = await apiRequest('/api/auth/request-otp', {
+      const res = await apiRequest('api/auth/request-otp', {
         method: 'POST',
         body: JSON.stringify({ email })
       });
@@ -2485,7 +2485,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       const btn = document.getElementById('btn-verify-otp');
       if (btn) { btn.disabled = true; btn.textContent = 'Verifying Code...'; }
       
-      const res = await apiRequest('/api/auth/verify-otp', {
+      const res = await apiRequest('api/auth/verify-otp', {
         method: 'POST',
         body: JSON.stringify({ email: authEmail, otp })
       });
@@ -2513,7 +2513,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     }
 
     if (id === 'btn-resend-otp') {
-      const res = await apiRequest('/api/auth/request-otp', {
+      const res = await apiRequest('api/auth/request-otp', {
         method: 'POST',
         body: JSON.stringify({ email: authEmail })
       });
