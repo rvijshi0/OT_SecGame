@@ -229,7 +229,8 @@ def get_all_config():
         "it_questions_per_game": it_q_per_game,
         "ot_questions_per_game": ot_q_per_game,
         "category_config": cat_cfg,
-        "mascot_file": cfg.get("mascot_file", "")
+        "mascot_file": cfg.get("mascot_file", ""),
+        "logo_file": cfg.get("logo_file", "")
     }
 
 def save_game_config_item(admin_email: str, key: str, value: str):

@@ -53,6 +53,11 @@ def mascot_url(cfg: dict) -> str:
     name = cfg.get("mascot_file") or ""
     return f"api/mascot?v={name}" if name else ""
 
+def logo_url(cfg: dict) -> str:
+    """Public URL for the organisation logo (versioned by filename so browsers refetch after an upload)."""
+    name = cfg.get("logo_file") or ""
+    return f"api/logo?v={name}" if name else ""
+
 def get_bearer_token() -> str:
     auth_header = request.headers.get("Authorization", "")
     if auth_header:
@@ -136,7 +141,8 @@ def get_public_config():
         "itQuestionsPerGame": cfg["it_questions_per_game"],
         "otQuestionsPerGame": cfg["ot_questions_per_game"],
         "categoryConfig": cfg["category_config"],
-        "mascotUrl": mascot_url(cfg)
+        "mascotUrl": mascot_url(cfg),
+        "logoUrl": logo_url(cfg)
     })
 
 @app.route("/api/mascot", methods=["GET"])
@@ -145,6 +151,17 @@ def get_mascot_image():
     name = get_all_config()["mascot_file"]
     if not name or not os.path.isfile(os.path.join(UPLOAD_DIR, name)):
         return jsonify({"status": "error", "message": "No mascot image configured."}), 404
+    resp = send_from_directory(UPLOAD_DIR, name)
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return resp
+
+@app.route("/api/logo", methods=["GET"])
+def get_logo_image():
+    """Serves the uploaded organisation logo (404 when none is configured)."""
+    name = get_all_config()["logo_file"]
+    if not name or not os.path.isfile(os.path.join(UPLOAD_DIR, name)):
+        return jsonify({"status": "error", "message": "No logo configured."}), 404
     resp = send_from_directory(UPLOAD_DIR, name)
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
@@ -348,6 +365,7 @@ def get_admin_config():
         "adminEmails": ADMIN_EMAILS,
         "config": cfg,
         "mascotUrl": mascot_url(cfg),
+        "logoUrl": logo_url(cfg),
         "availableQuestionsSummary": summary
     }), 200
 
@@ -401,6 +419,57 @@ def reset_mascot():
 
     log_audit_action(admin_user["email"], "RESET_MASCOT", "Removed Cybersecurity mascot image; reverted to default 3D character")
     return jsonify({"status": "success", "message": "Mascot reset to the default character.", "mascotUrl": ""}), 200
+
+@app.route("/api/admin/logo", methods=["POST"])
+def upload_logo():
+    """Replaces the organisation logo (PNG, JPG, GIF or WEBP, max 5 MB)."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+
+    upload = request.files.get("image")
+    if not upload:
+        return jsonify({"status": "error", "message": "No image file was uploaded."}), 400
+    data = upload.read(MASCOT_MAX_BYTES + 1)
+    if len(data) > MASCOT_MAX_BYTES:
+        return jsonify({"status": "error", "message": "Image is too large. Maximum size is 5 MB."}), 400
+    ext = detect_image_ext(data)
+    if not ext:
+        return jsonify({"status": "error", "message": "Unsupported file. Upload a PNG, JPG, GIF or WEBP image."}), 400
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    name = f"logo-{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+    with open(os.path.join(UPLOAD_DIR, name), "wb") as f:
+        f.write(data)
+
+    old = get_all_config()["logo_file"]
+    save_game_config_item(admin_user["email"], "logo_file", name)
+    if old and old != name:
+        try:
+            os.remove(os.path.join(UPLOAD_DIR, old))
+        except OSError:
+            pass
+
+    log_audit_action(admin_user["email"], "UPDATE_LOGO", f"Uploaded organisation logo ({ext}, {len(data)} bytes)")
+    return jsonify({"status": "success", "message": "Logo updated.", "logoUrl": logo_url({"logo_file": name})}), 200
+
+@app.route("/api/admin/logo", methods=["DELETE"])
+def reset_logo():
+    """Removes the uploaded logo so the built-in shield logo is shown again."""
+    admin_user, error = require_admin()
+    if error:
+        return error
+
+    old = get_all_config()["logo_file"]
+    save_game_config_item(admin_user["email"], "logo_file", "")
+    if old:
+        try:
+            os.remove(os.path.join(UPLOAD_DIR, old))
+        except OSError:
+            pass
+
+    log_audit_action(admin_user["email"], "RESET_LOGO", "Removed organisation logo; reverted to default shield logo")
+    return jsonify({"status": "success", "message": "Logo reset to the default.", "logoUrl": ""}), 200
 
 @app.route("/api/admin/config", methods=["POST"])
 def update_admin_config():

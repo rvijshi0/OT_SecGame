@@ -757,6 +757,8 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
   let allowedDomains = [];
   // Cybersecurity mascot image set from the admin dashboard ('' = built-in 3D character)
   let mascotUrl = '';
+  // Organisation logo set from the admin dashboard ('' = built-in shield logo)
+  let logoUrl = '';
   let pendingConfirm = null;
 
   function getBearerToken() {
@@ -917,6 +919,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     }
     if (input && allowedDomains.length) input.placeholder = 'you@' + allowedDomains[0];
     setMascotUrl(cfg.mascotUrl || '');
+    setLogoUrl(cfg.logoUrl || '');
   }).catch(() => {});
 
   // Swap the mascot everywhere it is currently on screen
@@ -926,6 +929,22 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     const state = engine.state;
     if (document.getElementById('hero-3d-canvas')) cyber3D.renderCharacter('hero-3d-canvas', 'IT');
     if (document.getElementById('scene-3d-canvas')) cyber3D.renderCharacter('scene-3d-canvas', state ? state.mission : 'IT');
+  }
+
+  // Organisation logo markup: uploaded image, or the built-in shield when none is set
+  function logoMarkup(idPrefix) {
+    if (logoUrl) return '<img class="org-logo" src="' + esc(logoUrl) + '" alt="Organisation logo" draggable="false" />';
+    return idPrefix ? ShieldLogo.replace(/id="(sg|si)"/g, 'id="' + idPrefix + '$1"').replace(/url\(#(sg|si)\)/g, 'url(#' + idPrefix + '$1)') : ShieldLogo;
+  }
+
+  // Swap the logo everywhere it is currently on screen (login panel, top bar, landing page)
+  function setLogoUrl(url) {
+    if (url === logoUrl) return;
+    logoUrl = url;
+    if (document.getElementById('auth-modal-overlay')) renderAuthModal();
+    if (currentUser) renderTopbar();
+    const landingLogo = document.querySelector('.landing__logo');
+    if (landingLogo) landingLogo.innerHTML = logoMarkup('');
   }
 
   function emailDomainAllowed(email) {
@@ -1074,7 +1093,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
 
     bar.innerHTML =
       '<button class="topbar__brand" id="tb-home-brand" title="Main page" aria-label="CYBER SHIFT — go to main page">' +
-      '<span class="topbar__logo">' + ShieldLogo.replace(/id="(sg|si)"/g, 'id="tb-$1"').replace(/url\(#(sg|si)\)/g, 'url(#tb-$1)') + '</span>' +
+      '<span class="topbar__logo">' + logoMarkup('tb-') + '</span>' +
       '<span class="topbar__brand-text">CYBER SHIFT</span></button>' +
       '<div class="topbar__center">' + center + '</div>' +
       '<nav class="topbar__nav" aria-label="Main navigation">' +
@@ -1167,7 +1186,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
 
     let bodyContent = '';
     if (authStep === 'email') {
-      bodyContent = '<div class="auth-header"><span class="auth-badge">CYBER SHIFT SECURITY</span><h2 class="auth-title">Participant Login</h2><p class="auth-desc">Enter your corporate email address to receive a 6-digit OTP code via SMTP.</p></div>' +
+      bodyContent = '<div class="auth-header">' + (logoUrl ? '<div class="auth-logo">' + logoMarkup('') + '</div>' : '') + '<span class="auth-badge">CYBER SHIFT SECURITY</span><h2 class="auth-title">Participant Login</h2><p class="auth-desc">Enter your corporate email address to receive a 6-digit OTP code via SMTP.</p></div>' +
         (authInfoMsg ? '<div class="auth-status ' + (authInfoTone === 'warn' ? 'auth-status--warn' : 'auth-status--success') + '">' + authInfoMsg + '</div>' : '') +
         (authErrorMsg ? '<div class="auth-status auth-status--error">' + esc(authErrorMsg) + '</div>' : '') +
         '<div class="auth-input-group"><label class="auth-label" for="inp-auth-email">Corporate Email Address</label><input type="email" id="inp-auth-email" class="auth-input" placeholder="' + esc(allowedDomains.length ? 'you@' + allowedDomains[0] : 'employee@company.com') + '" value="' + esc(authEmail) + '" autocomplete="email" autofocus />' +
@@ -1175,7 +1194,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
         '<button class="btn btn--primary btn--full" id="btn-request-otp">SEND OTP CODE →</button>' +
         '<div style="margin-top:var(--space-md);text-align:center;font-size:11px;color:var(--text-muted)">🔒 Campaign Rule: Each participant is permitted <strong>ONE (1) attempt</strong> for each mission.</div>';
     } else {
-      bodyContent = '<div class="auth-header"><span class="auth-badge">OTP VERIFICATION</span><h2 class="auth-title">Enter Security Code</h2><p class="auth-desc">A 6-digit OTP was sent via SMTP to <strong>' + esc(authEmail) + '</strong>.</p></div>' +
+      bodyContent = '<div class="auth-header">' + (logoUrl ? '<div class="auth-logo">' + logoMarkup('') + '</div>' : '') + '<span class="auth-badge">OTP VERIFICATION</span><h2 class="auth-title">Enter Security Code</h2><p class="auth-desc">A 6-digit OTP was sent via SMTP to <strong>' + esc(authEmail) + '</strong>.</p></div>' +
         (authErrorMsg ? '<div class="auth-status auth-status--error">' + esc(authErrorMsg) + '</div>' : '') +
         (authSuccessMsg ? '<div class="auth-status auth-status--success">' + esc(authSuccessMsg) + '</div>' : '') +
         (devNoticeOtp ? '<div class="auth-status auth-status--dev">🔐‘ DEV MODE OTP: <strong>' + esc(devNoticeOtp) + '</strong></div>' : '') +
@@ -1507,6 +1526,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
     adminDataCache.adminEmails = cData.adminEmails || ['admin@company.com'];
         adminDataCache.config = cData.config || {};
         adminDataCache.mascotUrl = cData.mascotUrl || '';
+        adminDataCache.logoUrl = cData.logoUrl || '';
         adminDataCache.summary = cData.availableQuestionsSummary || {};
         adminCatConfigState = JSON.parse(JSON.stringify(cData.config.category_config || {}));
       }
@@ -1667,9 +1687,31 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
             '<div><strong>Session Lifetime:</strong> <code>24 Hours</code></div>' +
           '</div>' +
         '</div>' +
+        renderAdminLogoHtml() +
         renderAdminMascotHtml() +
       '</div>' +
 
+    '</div>';
+  }
+
+  function renderAdminLogoHtml() {
+    const url = adminDataCache.logoUrl || '';
+    return '<div class="admin-card">' +
+      '<div class="admin-card__title"><span>🏢 Organisation Logo</span>' +
+        '<span class="status-pill ' + (url ? 'status-pill--completed' : '') + '">' + (url ? 'CUSTOM LOGO' : 'DEFAULT SHIELD') + '</span></div>' +
+      '<div class="mascot-admin">' +
+        '<div class="mascot-admin__preview" id="logo-admin-preview">' +
+          (url ? '<img src="' + esc(url) + '" alt="Current organisation logo" />' : '<span>No logo uploaded.<br/>The built-in shield is shown.</span>') +
+        '</div>' +
+        '<div class="mascot-admin__body">' +
+          '<p>Shown in the login panel, the top menu bar and the landing page. Use a PNG or WEBP with a transparent background (max 5 MB; PNG, JPG, GIF or WEBP).</p>' +
+          '<input type="file" id="inp-logo-file" accept="image/png,image/jpeg,image/gif,image/webp" />' +
+          '<div class="mascot-admin__actions">' +
+            '<button class="btn btn--primary" id="btn-logo-upload" disabled>⬆ Upload logo</button>' +
+            (url ? '<button class="btn btn--ghost" id="btn-logo-reset">↺ Revert to default</button>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
     '</div>';
   }
 
@@ -2067,6 +2109,76 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
       };
     }
 
+    const inpLogo = document.getElementById('inp-logo-file');
+    const btnLogoUp = document.getElementById('btn-logo-upload');
+    if (inpLogo && btnLogoUp) {
+      inpLogo.onchange = () => {
+        const file = inpLogo.files[0];
+        btnLogoUp.disabled = !file;
+        const preview = document.getElementById('logo-admin-preview');
+        if (file && preview) {
+          const img = document.createElement('img');
+          img.alt = 'New logo preview';
+          img.src = URL.createObjectURL(file);
+          preview.replaceChildren(img);
+        }
+      };
+      btnLogoUp.onclick = async (e) => {
+        e.preventDefault();
+        const file = inpLogo.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('⚠️ Image is too large. Maximum size is 5 MB.');
+          return;
+        }
+        btnLogoUp.disabled = true;
+        const form = new FormData();
+        form.append('image', file);
+        try {
+          const res = await fetch('api/admin/logo', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + getBearerToken() },
+            body: form
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+            adminDataCache.logoUrl = data.logoUrl || '';
+            setLogoUrl(data.logoUrl || '');
+            showToast('✅ Organisation logo updated.');
+            nav('admin');
+          } else {
+            showToast('❌ ' + data.message);
+            btnLogoUp.disabled = false;
+          }
+        } catch (err) {
+          console.error('[LOGO UPLOAD ERROR]', err);
+          showToast('❌ Failed to upload logo.');
+          btnLogoUp.disabled = false;
+        }
+      };
+    }
+
+    const btnLogoReset = document.getElementById('btn-logo-reset');
+    if (btnLogoReset) {
+      btnLogoReset.onclick = async (e) => {
+        e.preventDefault();
+        if (!confirm('Remove the uploaded logo and show the default shield?')) return;
+        const res = await fetch('api/admin/logo', {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + getBearerToken() }
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          adminDataCache.logoUrl = '';
+          setLogoUrl('');
+          showToast('✅ Logo reverted to the default shield.');
+          nav('admin');
+        } else {
+          showToast('❌ ' + data.message);
+        }
+      };
+    }
+
     const inpMascot = document.getElementById('inp-mascot-file');
     const btnMascotUp = document.getElementById('btn-mascot-upload');
     if (inpMascot && btnMascotUp) {
@@ -2275,7 +2387,7 @@ function getBearerToken() { return authToken || localStorage.getItem(TOKEN_KEY) 
   function screenLanding() {
     const run = activeRun();
     const resumeBtn = run ? '<button class="btn btn--primary btn--lg" id="tb-resume-' + run.mission + '">⏳ RESUME ' + run.mission + ' MISSION (' + runProgress(run).done + '/' + runProgress(run).total + ')</button>' : '';
-    return '<div class="landing scene-enter"><div class="landing__logo">' + ShieldLogo + '</div><h1 class="landing__title">CYBER SHIFT</h1><p class="landing__tagline">Your workday looks normal.<br/>Then <strong>one message</strong> changes the situation.<br/><br/>Make the right calls.<br/>Protect the business. Protect the plant.</p>' +
+    return '<div class="landing scene-enter"><div class="landing__logo">' + logoMarkup('') + '</div><h1 class="landing__title">CYBER SHIFT</h1><p class="landing__tagline">Your workday looks normal.<br/>Then <strong>one message</strong> changes the situation.<br/><br/>Make the right calls.<br/>Protect the business. Protect the plant.</p>' +
       '<div class="hero-3d-container"><div id="hero-3d-canvas" class="cyber-3d-wrapper"></div></div>' +
       '<div class="landing__cta-group">' + resumeBtn + '<button class="btn ' + (run ? 'btn--secondary' : 'btn--primary btn--lg') + '" id="btn-start">▶ ENTER MISSION SELECT</button><button class="btn btn--secondary" id="btn-howto">How to Play</button><button class="btn btn--ghost" id="btn-lb">🏆 Leaderboard</button></div><div class="landing__version">v' + GAME_VERSION.gameVersion + ' · Build ' + GAME_VERSION.buildVersion + '</div><div class="privacy-notice">🔒 Single-Play Policy Active: 1 attempt allowed per user per mission. Authenticated via SMTP OTP.</div></div>';
   }
